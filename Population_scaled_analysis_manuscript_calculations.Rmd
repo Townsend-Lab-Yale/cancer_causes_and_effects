@@ -11,7 +11,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(cancereffectsizeR)
+library(cancereffectsizeR) # use v.0.1.1.9010 
+# 'remotes::install_github("Townsend-Lab-Yale/cancereffectsizeR",ref = "140b261e5bd32ac064718d588e6b7310f3e601a4")'
 library(cowplot)
 
 variant_name_extracter <- function(variant_names_vec){
