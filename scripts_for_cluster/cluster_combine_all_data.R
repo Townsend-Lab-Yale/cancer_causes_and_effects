@@ -27,12 +27,12 @@ for(j in 1:length(effect_size_files)){
   load(effect_size_files[j])
   
   
-  maf <- analysis@maf[Variant_Type=="SNV"]
+  maf <- analysis@maf[variant_type=="snv"]
   total_substitutions[[j]] <- table(maf$Unique_Patient_Identifier)
   
   
   
-  selection_data <- as.data.frame(analysis@selection_results[tumors_with_variant > 1])
+  selection_data <- as.data.frame(analysis@selection_results$selection.1)
   
   
   selection_data$tumor_type <- tumor_names[j]
@@ -44,6 +44,7 @@ for(j in 1:length(effect_size_files)){
   
   # View(selection_data_df)
   print(tumor_names[j])
+  
 }
 
 save(selection_data_main,file = "combined_selection_results.RData")

@@ -1,116 +1,102 @@
 tumor_type	Signature	statistic	p.value	method	alternative	significant
-BLCA	APOBEC (2,13)	106207.5	0.000102308465511767	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-BLCA	Age-associated (1,5)	37342	0.00147346385788049	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-BLCA	Unknown signatures	14586	0.00390587960744149	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-BLCA	Aristolochic acid exposure (22)	18	0.578125	Wilcoxon signed rank exact test	two.sided	FALSE
-BLCA	Tobacco chewing (29)	4	0.013671875	Wilcoxon signed rank exact test	two.sided	TRUE
-BRCA (ER–)	APOBEC (2,13)	2026	1.3232485560071e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-BRCA (ER–)	Age-associated (1,5)	3403	0.00508537321657957	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-BRCA (ER–)	Unknown signatures	18145	0.0897808121585353	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-BRCA (ER–)	Tobacco chewing (29)	21	0.91015625	Wilcoxon signed rank exact test	two.sided	FALSE
-BRCA (ER+)	APOBEC (2,13)	105936	1.18229983686786e-11	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-BRCA (ER+)	Age-associated (1,5)	113334	0.346932349624167	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-BRCA (ER+)	Unknown signatures	412400	3.40571633312084e-15	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-BRCA (ER+)	Tobacco chewing (29)	218	0.00899504264089046	Wilcoxon signed rank exact test	two.sided	TRUE
-CESC	APOBEC (2,13)	47535	0.164002530165395	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-CESC	Age-associated (1,5)	15655	0.0188740165738195	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-CESC	Unknown signatures	6105	3.50484916641237e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-COAD	APOBEC (2,13)	589	3.64519795884522e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-COAD	Age-associated (1,5)	159668	0.104143334979053	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-COAD	Unknown signatures	264778	2.03648032110288e-08	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-ESCA	APOBEC (2,13)	1311	6.93499502986365e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-ESCA	Age-associated (1,5)	7459	0.00248652077222646	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-ESCA	Unknown signatures	19373	0.0020861504584233	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-ESCA	UV light (7a,7b,7c,7d)	150	2.13862452937974e-05	Wilcoxon signed rank exact test	two.sided	TRUE
+BLCA	APOBEC (2,13)	117558.5	0.0591474150171478	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+BLCA	Age-associated (1,5)	32988	0.045415798963565	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+BLCA	Unknown signatures	17251	1.12332912789483e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+BLCA	Aristolochic acid exposure (22)	11	1	Wilcoxon signed rank exact test	two.sided	FALSE
+BLCA	Tobacco chewing (29)	9	0.064453125	Wilcoxon signed rank exact test	two.sided	FALSE
+BRCA (ER–)	APOBEC (2,13)	1973	1.1125720766704e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+BRCA (ER–)	Age-associated (1,5)	3339	0.0174642414420801	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+BRCA (ER–)	Unknown signatures	19511	0.136732648731626	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+BRCA (ER–)	Tobacco chewing (29)	26	0.921875	Wilcoxon signed rank exact test	two.sided	FALSE
+BRCA (ER+)	APOBEC (2,13)	105183.5	2.51463002882779e-12	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+BRCA (ER+)	Age-associated (1,5)	113595	0.431999123533943	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+BRCA (ER+)	Unknown signatures	417329	1.53740466663325e-14	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+BRCA (ER+)	Tobacco chewing (29)	202	0.00444481201702729	Wilcoxon signed rank exact test	two.sided	TRUE
+CESC	APOBEC (2,13)	48403.5	0.280049073373037	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+CESC	Age-associated (1,5)	15490	0.0710984391997643	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+CESC	Unknown signatures	6067	2.78812256238171e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+COAD	APOBEC (2,13)	553	6.64592257763943e-08	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+COAD	Age-associated (1,5)	159815	0.0247638676404385	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+COAD	Unknown signatures	279647	3.96868863187814e-10	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+ESCA	APOBEC (2,13)	1061	1.04825571015175e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+ESCA	Age-associated (1,5)	7356	0.00761896987007926	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+ESCA	Unknown signatures	19629	0.00462536711365463	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+ESCA	UV light (7a,7b,7c,7d)	242	0.00260809767485171	Wilcoxon signed rank exact test	two.sided	TRUE
 ESCA	Tobacco smoking (4)	11	0.6875	Wilcoxon signed rank exact test	two.sided	FALSE
 ESCA	Potentially indirect damage from UV light (38)	0	1	Wilcoxon signed rank exact test	two.sided	FALSE
 GBM	APOBEC (2,13)	43	2.95426616503392e-09	Wilcoxon signed rank exact test	two.sided	TRUE
-GBM	Age-associated (1,5)	79672	3.64722175490146e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-GBM	Unknown signatures	21456.5	5.15069958872637e-11	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-GBM	Exposure to haloalkanes (42)	591	0.000230477171186939	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-GBM	Alkylating agents (11)	239	0.0040605245990264	Wilcoxon signed rank exact test	two.sided	TRUE
-HNSC (HPV−)	APOBEC (2,13)	29742	5.6153938185894e-17	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-HNSC (HPV−)	Age-associated (1,5)	42572	3.83813168902502e-10	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-HNSC (HPV−)	Unknown signatures	74496	1.92976799729697e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-HNSC (HPV−)	Tobacco chewing (29)	186	0.151072263717651	Wilcoxon signed rank exact test	two.sided	FALSE
-HNSC (HPV−)	UV light (7a,7b,7c,7d)	2805	3.53211565306258e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-HNSC (HPV−)	Tobacco smoking (4)	1214	0.1594646380684	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+GBM	Age-associated (1,5)	80138.5	1.15585637657286e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+GBM	Unknown signatures	29122	2.04687707241589e-12	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+GBM	Exposure to haloalkanes (42)	934	2.05678303480979e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+HNSC (HPV−)	APOBEC (2,13)	30341	1.30250340833184e-16	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+HNSC (HPV−)	Age-associated (1,5)	46333	6.41016926962594e-10	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+HNSC (HPV−)	Unknown signatures	81759	3.91216476031914e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+HNSC (HPV−)	UV light (7a,7b,7c,7d)	2539	1.62950313254586e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+HNSC (HPV−)	Tobacco smoking (4)	1361	0.251922913194922	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
 HNSC (HPV−)	Potentially indirect damage from UV light (38)	2	1	Wilcoxon signed rank exact test	two.sided	FALSE
-HNSC (HPV−)	Treatment with azathioprine (32)	860	0.165928236797691	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-HNSC (HPV+)	APOBEC (2,13)	817	0.524023148947471	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-HNSC (HPV+)	Age-associated (1,5)	306	0.501645791475312	Wilcoxon signed rank exact test	two.sided	FALSE
-HNSC (HPV+)	Unknown signatures	48	7.11414031684399e-07	Wilcoxon signed rank exact test	two.sided	TRUE
-HNSC (HPV+)	Tobacco chewing (29)	0	0.25	Wilcoxon signed rank exact test	two.sided	FALSE
-HNSC (HPV+)	UV light (7a,7b,7c,7d)	75	0.42120361328125	Wilcoxon signed rank exact test	two.sided	FALSE
+HNSC (HPV+)	APOBEC (2,13)	817.5	0.521221124829852	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+HNSC (HPV+)	Age-associated (1,5)	303	0.473451182755525	Wilcoxon signed rank exact test	two.sided	FALSE
+HNSC (HPV+)	Unknown signatures	49	3.17265858029714e-09	Wilcoxon signed rank exact test	two.sided	TRUE
+HNSC (HPV+)	UV light (7a,7b,7c,7d)	70	0.5994873046875	Wilcoxon signed rank exact test	two.sided	FALSE
 HNSC (HPV+)	Potentially indirect damage from UV light (38)	0	1	Wilcoxon signed rank exact test	two.sided	FALSE
-HNSC (HPV+)	Treatment with azathioprine (32)	1	0.00390625	Wilcoxon signed rank exact test	two.sided	TRUE
 KIRC	APOBEC (2,13)	21	0.17626953125	Wilcoxon signed rank exact test	two.sided	FALSE
-KIRC	Age-associated (1,5)	991	0.295922697975026	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-KIRC	Unknown signatures	2894	0.529889381854001	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+KIRC	Age-associated (1,5)	987	0.310464626971702	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+KIRC	Unknown signatures	2901.5	0.544442920682354	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
 KIRC	Aristolochic acid exposure (22)	0	0.00048828125	Wilcoxon signed rank exact test	two.sided	TRUE
 KIRC	Tobacco chewing (29)	7	0.296875	Wilcoxon signed rank exact test	two.sided	FALSE
 KIRC	Tobacco smoking (4)	10	0.125	Wilcoxon signed rank exact test	two.sided	FALSE
-LGG	Age-associated (1,5)	232991	0.00180840958671357	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LGG	Unknown signatures	347	1.79078676535681e-13	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LGG	UV light (7a,7b,7c,7d)	772	1.60286313612412e-29	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LGG	Alkylating agents (11)	85	2.29297665173239e-14	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LIHC	Age-associated (1,5)	7473	0.00663172692483721	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LIHC	Unknown signatures	76098	0.0022390650694781	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LIHC	Aristolochic acid exposure (22)	912	2.9783398488139e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LIHC	Tobacco chewing (29)	70	0.5994873046875	Wilcoxon signed rank exact test	two.sided	FALSE
-LIHC	Tobacco smoking (4)	259	0.209803938865662	Wilcoxon signed rank exact test	two.sided	FALSE
-LIHC	Aflatoxin exposure (24)	507	0.196854552554214	Wilcoxon signed rank exact test	two.sided	FALSE
-LIHC	Prior treatment with platinum drugs (35)	131	0.00105659611290321	Wilcoxon signed rank exact test	two.sided	TRUE
-LIHC	Prior treatment with platinum drugs (31)	19	0.431640625	Wilcoxon signed rank exact test	two.sided	FALSE
-LUAD	APOBEC (2,13)	26843	1.04264954247451e-25	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUAD	Age-associated (1,5)	47982	0.0272257584399501	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUAD	Unknown signatures	125943	2.79937015073242e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUAD	Tobacco chewing (29)	2759	0.00843888714688685	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUAD	Tobacco smoking (4)	82760	9.55915197786061e-12	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUSC	APOBEC (2,13)	35189	1.30718299042304e-09	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUSC	Age-associated (1,5)	55261	0.339860401316825	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-LUSC	Unknown signatures	112153	6.76330718811742e-11	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUSC	Tobacco chewing (29)	2519	1.10936082537874e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUSC	UV light (7a,7b,7c,7d)	255.5	0.000661167341367421	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-LUSC	Tobacco smoking (4)	42367	5.77900457845462e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-OV	APOBEC (2,13)	107	1.71968744981019e-13	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-OV	Age-associated (1,5)	29476	0.000177171339899287	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-OV	Unknown signatures	144249.5	0.00769809402165327	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-OV	UV light (7a,7b,7c,7d)	975	1.66159466870114e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-OV	Potentially indirect damage from UV light (38)	0	0.125	Wilcoxon signed rank exact test	two.sided	FALSE
-OV	Prior treatment with platinum drugs (35)	1033	0.298183516765363	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-PAAD	APOBEC (2,13)	125	9.6120133016669e-10	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-PAAD	Age-associated (1,5)	32534	0.226915230755031	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-PAAD	Unknown signatures	27641	0.35711630739106	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-PAAD	Prior treatment with platinum drugs (31)	355	0.522281627927442	Wilcoxon signed rank exact test	two.sided	FALSE
+LGG	Age-associated (1,5)	228332	0.00942941345917396	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LGG	Unknown signatures	306	6.09132681015735e-15	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LGG	UV light (7a,7b,7c,7d)	726	2.22285182385941e-32	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LIHC	Age-associated (1,5)	7276	0.00428740094074819	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LIHC	Unknown signatures	79099	0.000501334751522042	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LIHC	Aristolochic acid exposure (22)	918	2.59445333225389e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LIHC	Tobacco chewing (29)	57	0.377822875976563	Wilcoxon signed rank exact test	two.sided	FALSE
+LIHC	Tobacco smoking (4)	442	0.476576860863133	Wilcoxon signed rank exact test	two.sided	FALSE
+LIHC	Aflatoxin exposure (24)	547	0.23759369481877	Wilcoxon signed rank exact test	two.sided	FALSE
+LUAD	APOBEC (2,13)	25263	1.13796965757158e-27	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUAD	Age-associated (1,5)	47794	0.033459966003289	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUAD	Unknown signatures	126147	1.09029200037707e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUAD	Tobacco chewing (29)	2873	0.0158045472940374	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUAD	Tobacco smoking (4)	83431	2.15035953750033e-12	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUSC	APOBEC (2,13)	34222	3.20714372203539e-10	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUSC	Age-associated (1,5)	55537	0.423424288343199	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+LUSC	Unknown signatures	110705	5.46056580803585e-11	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUSC	Tobacco chewing (29)	2289	1.92079241830934e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUSC	UV light (7a,7b,7c,7d)	245.5	0.0007650205126667	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+LUSC	Tobacco smoking (4)	43079	5.13544521495182e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+OV	APOBEC (2,13)	207	1.2615838285204e-12	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+OV	Age-associated (1,5)	27342	0.00101663402378094	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+OV	Unknown signatures	162481	0.0141415336257491	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+OV	UV light (7a,7b,7c,7d)	917	9.1061158467072e-08	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+OV	Potentially indirect damage from UV light (38)	0	0.03125	Wilcoxon signed rank exact test	two.sided	TRUE
+PAAD	APOBEC (2,13)	129	1.13637257614493e-09	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+PAAD	Age-associated (1,5)	32166	0.16628455005362	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+PAAD	Unknown signatures	29469	0.455881581999058	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
 PRAD	APOBEC (2,13)	1	4.76837158203125e-07	Wilcoxon signed rank exact test	two.sided	TRUE
-PRAD	Age-associated (1,5)	19914	0.298694657242792	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-PRAD	Unknown signatures	25956	1.44055505826627e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-READ	APOBEC (2,13)	28	4.41074371337891e-05	Wilcoxon signed rank exact test	two.sided	TRUE
-READ	Age-associated (1,5)	12328	0.0930870096072586	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
-READ	Unknown signatures	11042	4.93888132146868e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-SKCM, metastases	APOBEC (2,13)	739	2.16506584119375e-25	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-SKCM, metastases	Age-associated (1,5)	3608	2.92965911339239e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-SKCM, metastases	Unknown signatures	7057	0.000498153099624742	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-SKCM, metastases	UV light (7a,7b,7c,7d)	144941	2.21506978462877e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+PRAD	Age-associated (1,5)	20355	0.205244752868895	Wilcoxon signed rank test with continuity correction	two.sided	FALSE
+PRAD	Unknown signatures	39387	3.30829436686045e-12	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+READ	APOBEC (2,13)	48	0.000664144754409791	Wilcoxon signed rank exact test	two.sided	TRUE
+READ	Age-associated (1,5)	12221	0.0258494863613946	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+READ	Unknown signatures	13195	4.8912455052508e-08	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+SKCM, metastases	APOBEC (2,13)	996	1.11821468653075e-24	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+SKCM, metastases	Age-associated (1,5)	6206	2.29442280169597e-08	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+SKCM, metastases	Unknown signatures	12380	5.42481768060254e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+SKCM, metastases	UV light (7a,7b,7c,7d)	136062	8.09211726139089e-08	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
 SKCM, metastases	Potentially indirect damage from UV light (38)	1	0.125	Wilcoxon signed rank exact test	two.sided	FALSE
-SKCM, metastases	Alkylating agents (11)	135	5.95387025167463e-09	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-SKCM, metastases	Prior treatment with platinum drugs (31)	1636	1.13270603681088e-07	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-SKCM, primary	APOBEC (2,13)	23	7.62939453125001e-05	Wilcoxon signed rank exact test	two.sided	TRUE
-SKCM, primary	Age-associated (1,5)	511	0.0413728777639335	Wilcoxon signed rank exact test	two.sided	TRUE
-SKCM, primary	Unknown signatures	351	0.0136632416397333	Wilcoxon signed rank exact test	two.sided	TRUE
-SKCM, primary	UV light (7a,7b,7c,7d)	14391	0.00561840807806138	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+SKCM, primary	APOBEC (2,13)	28	0.00017547607421875	Wilcoxon signed rank exact test	two.sided	TRUE
+SKCM, primary	Age-associated (1,5)	761	0.0152327570295654	Wilcoxon signed rank exact test	two.sided	TRUE
+SKCM, primary	Unknown signatures	1076	0.00414117823618899	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+SKCM, primary	UV light (7a,7b,7c,7d)	14268.5	0.00232962303741605	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
 SKCM, primary	Potentially indirect damage from UV light (38)	9	0.84375	Wilcoxon signed rank exact test	two.sided	FALSE
-SKCM, primary	Alkylating agents (11)	0	9.5367431640625e-07	Wilcoxon signed rank exact test	two.sided	TRUE
-SKCM, primary	Prior treatment with platinum drugs (31)	273	0.00202512741088867	Wilcoxon signed rank exact test	two.sided	TRUE
-STAD	APOBEC (2,13)	769	1.86842918394388e-17	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-STAD	Age-associated (1,5)	127981.5	0.000497044230154226	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-STAD	Unknown signatures	185364	9.43135987442064e-09	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-THCA	APOBEC (2,13)	1420	1.79223210544763e-116	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-THCA	Age-associated (1,5)	77843	7.73839356424734e-45	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-THCA	Unknown signatures	54435	6.82854760465669e-33	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-THCA	Tobacco chewing (29)	454	0.000177780166268349	Wilcoxon signed rank exact test	two.sided	TRUE
-UCEC	APOBEC (2,13)	2663	3.40538732228902e-10	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-UCEC	Age-associated (1,5)	167365	2.7181602406147e-06	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-UCEC	Unknown signatures	202210	1.353037328669e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
-UCEC	UV light (7a,7b,7c,7d)	1517	2.02027797660853e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+STAD	APOBEC (2,13)	449	3.95696399164046e-20	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+STAD	Age-associated (1,5)	126636	0.000592500121383358	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+STAD	Unknown signatures	182569	1.80312472587714e-09	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+THCA	APOBEC (2,13)	2564	4.55953844239696e-113	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+THCA	Age-associated (1,5)	69071	2.09665255572091e-27	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+THCA	Unknown signatures	57090	1.20880964947852e-39	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+THCA	Tobacco chewing (29)	416	0.0144428147468716	Wilcoxon signed rank exact test	two.sided	TRUE
+UCEC	APOBEC (2,13)	2521	6.77246874080586e-11	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+UCEC	Age-associated (1,5)	160695	2.635503187631e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+UCEC	Unknown signatures	203879	7.28272064795778e-05	Wilcoxon signed rank test with continuity correction	two.sided	TRUE
+UCEC	UV light (7a,7b,7c,7d)	1554	0.000137891438720221	Wilcoxon signed rank test with continuity correction	two.sided	TRUE

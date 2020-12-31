@@ -11,8 +11,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(cancereffectsizeR) # use v.0.1.1.9010 
-# 'remotes::install_github("Townsend-Lab-Yale/cancereffectsizeR",ref = "140b261e5bd32ac064718d588e6b7310f3e601a4")'
+library(cancereffectsizeR) # use v2.0
 library(cowplot)
 
 variant_name_extracter <- function(variant_names_vec){
@@ -43,7 +42,14 @@ Here, we describe the method to calculate the population scaled selection intens
 ```{r load in figure 1 data}
 
 tumor_pick <- "MDA-1229"
-data(signatures_names_matrix,package = "cancereffectsizeR")
+# data(signatures_names_matrix,package = "cancereffectsizeR")
+
+signatures_names_matrix <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
+signatures_names_matrix <- as.data.frame(signatures_names_matrix$meta[,c("Signature","Etiology")])
+
+signatures_names_matrix$Etiology_sig <- paste0(signatures_names_matrix$Etiology, " (",gsub(pattern = "SBS",replacement = "",x = signatures_names_matrix$Signature),")")
+
+rownames(signatures_names_matrix) <- signatures_names_matrix$Signature
 ```
 
 
@@ -52,7 +58,7 @@ data(signatures_names_matrix,package = "cancereffectsizeR")
 ```{r LUSC trinucleotide weights}
 
 # get signature weights of all tumors in LUSC
-sig_weights_all <- cancereffectsizeR::get_signature_weights(analysis,include_tumors_without_data = T)
+sig_weights_all <- cancereffectsizeR::get_signature_weights(analysis)
 
 # isolate the tumor of interest, 
 sig_weights <- sig_weights_all %>% 
@@ -64,7 +70,7 @@ sig_weights <- sig_weights_all %>%
   # normalize to 1
   mutate(value = value/sum(value)) %>%
   # change name to long form
-  mutate(name = signatures_names_matrix[name,2]) %>%
+  mutate(name = signatures_names_matrix[name,"Etiology_sig"]) %>%
   # order in ascending value
   arrange(value)
 
@@ -81,7 +87,7 @@ pop_scaled_selection_data <- per_tumor_data_main %>%
   filter(NRSI > 0) %>%
   arrange(desc(NRSI_pct)) %>%
   mutate(Sig_name = gsub(pattern = "_nrsi",replacement = "",x = Signature)) %>%
-  mutate(Sig_name = signatures_names_matrix[Sig_name,2]) %>%
+  mutate(Sig_name = signatures_names_matrix[Sig_name,"Etiology_sig"]) %>%
   group_by(variant) %>%
   summarize(pct_sum = sum(NRSI_pct))
 
@@ -130,21 +136,45 @@ signature_proportion_plot
 
 ```{r load in trinuc rates}
 
-data(signatures_cosmic_May2019, package="cancereffectsizeR")
-rownames(signatures_cosmic_May2019) <- signatures_names_matrix[rownames(signatures_cosmic_May2019),2]
+signatures_cosmic <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
+signatures_cosmic <- as.data.frame(signatures_cosmic$signatures)
 
-signatures_cosmic_May2019 <- signatures_cosmic_May2019[rownames(signatures_cosmic_May2019) %in% sig_weights$name,]
 
-signatures_m <- signatures_cosmic_May2019 %>% 
+
+rownames(signatures_cosmic) <- signatures_names_matrix[rownames(signatures_cosmic),"Etiology_sig"]
+
+signatures_cosmic <- signatures_cosmic[rownames(signatures_cosmic) %in% sig_weights$name,]
+
+signatures_m <- signatures_cosmic %>% 
   mutate(Signatures = rownames(.)) %>%
   pivot_longer(-Signatures)
 
 signatures_m$variant <- NA
 
 # lining up variants with their trinucleotide mutation
-analysis@maf[grep(pattern = "NFE2L2_R34P",x = analysis@maf$assoc_aa_mut),trinuc_mut]
-analysis@maf[grep(pattern = "OR13G1_L79L",x = analysis@maf$assoc_aa_mut),] #  "C[C>A]A" in tumor pick
-analysis@maf[grep(pattern = "TP53_R282W",x = analysis@maf$assoc_aa_mut),trinuc_mut]
+
+
+
+
+
+
+## TODO: revisit with trinuc context
+
+# variants_output <- as.data.frame(analysis$variants)
+# 
+# variants_output[grep(pattern = "OR13G1_L79L",x = variants_output$variant_name),]
+# variants_output[grep(pattern = "NFE2L2_R34P",x = variants_output$variant_name),]
+# 
+# selection_output <- as.data.frame(analysis$selection$selection.1)
+# selection_output[grep(pattern = "OR13G1_L79L",x = selection_output$variant_name),]
+# selection_output[grep(pattern = "NFE2L2_R34P",x = selection_output$variant_name),]
+# 
+# analysis@maf[grep(pattern = "NFE2L2_R34P",x = analysis@maf$assoc_aa_mut),trinuc_mut]
+# analysis@maf[grep(pattern = "OR13G1_L79L",x = analysis@maf$assoc_aa_mut),] #  "C[C>A]A" in tumor pick
+# analysis@maf[grep(pattern = "TP53_R282W",x = analysis@maf$assoc_aa_mut),trinuc_mut]
+# 
+
+
 
 signatures_m$variant[which(signatures_m$name == "T[C>G]G")] <- "NFE2L2 R34P"
 signatures_m$variant[which(signatures_m$name == "C[C>A]A")] <- "OR13G1 L79L"
@@ -260,7 +290,7 @@ contributed_flux <- population_scaled_selection %>%
   # normalize contrited weight to sum to 1 
   mutate(value = value / sum(value)) %>% 
   # assign signature etiology 
-  mutate(signatures = signatures_names_matrix[as.character(signatures),2])
+  mutate(signatures = signatures_names_matrix[as.character(signatures),"Etiology_sig"])
 
 contributed_flux$signatures <- factor(contributed_flux$signatures, levels=levels(sig_weights$name )) 
 contributed_flux$variant <- factor(contributed_flux$variant, 
@@ -289,8 +319,8 @@ contribution_plot
 ## Effect sizes plot
 
 ```{r effect size plot}
-effect_size_data <- analysis$selection %>% 
-  mutate(variant = variant_name_extracter(variant)) %>% 
+effect_size_data <- analysis$selection$selection.1 %>% 
+  mutate(variant = variant_name_extracter(variant_name)) %>% 
   filter(variant %in% variant_levels) %>% 
   mutate(effect_size_prop = selection_intensity/sum(selection_intensity)) 
 
@@ -327,7 +357,7 @@ this_pop_scaled_effect_size <- population_scaled_selection %>%
   # normalize contrited weight to sum to 1 
   mutate(pct = value / sum(value)) %>% 
   # assign signature etiology 
-  mutate(signatures = signatures_names_matrix[as.character(signatures),2])
+  mutate(signatures = signatures_names_matrix[as.character(signatures),"Etiology_sig"])
 
 
 this_pop_scaled_effect_size$variant <- factor(this_pop_scaled_effect_size$variant, levels=variant_levels)
@@ -527,7 +557,7 @@ signatures_present <- weights_combined %>%
   select(Signature) %>%
   unique(.)
 
-data(signatures_names_matrix,package = "cancereffectsizeR")
+# data(signatures_names_matrix,package = "cancereffectsizeR")
 
 top_weights <- weights_combined %>% 
   filter(Tumor %in% selected_tumors) %>%
@@ -535,9 +565,9 @@ top_weights <- weights_combined %>%
   group_by(Signature) %>%
   summarize(sum_weights = sum(Weight_prop)) %>%
   arrange(desc(sum_weights)) %>%
-  mutate(signature_name = signatures_names_matrix[Signature,2])
+  mutate(signature_name = signatures_names_matrix[Signature,"Etiology_sig"])
 
-sigs_present_ordered <- signatures_names_matrix[signatures_names_matrix[,1] %in% as.vector(as.matrix(signatures_present)),2]
+sigs_present_ordered <- signatures_names_matrix[signatures_names_matrix[,1] %in% as.vector(as.matrix(signatures_present)),"Etiology_sig"]
 
 # this is random, can rerun to get good colors
 these_colors <- setNames(nm = sigs_present_ordered,(gg_color_hue(n = length(sigs_present_ordered))))
@@ -659,7 +689,7 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
     mutate(bar_label_2 = ifelse(is.na(bar_label),as.character(Signature),paste0(bar_label," by ", Signature))) 
   
   these_data_nozero_forplot <- these_data_nozero %>%
-    mutate(Signature = signatures_names_matrix[as.character(Signature),2]) %>%
+    mutate(Signature = signatures_names_matrix[as.character(Signature),"Etiology_sig"]) %>%
     mutate(sig_collapsed = case_when(
       as.character(Signature) %in% as.vector(as.matrix(top_weights[1:signatures_to_color,"signature_name"]))  ~ as.character(Signature), 
       TRUE ~ "Other signatures")
@@ -1079,9 +1109,9 @@ per_tumor_combined$tumor_type <-
                       `BRCA (ER+)` = "BRCA_ER_pos")
 
 
-per_tumor_combined$Signature_long <- signatures_names_matrix[per_tumor_combined$Signature,2]
+per_tumor_combined$Signature_long <- signatures_names_matrix[per_tumor_combined$Signature,"Etiology_sig"]
 per_tumor_combined$Signature <- factor(per_tumor_combined$Signature, levels=signatures_names_matrix[,1])
-per_tumor_combined$Signature_long <- factor(per_tumor_combined$Signature_long, levels=signatures_names_matrix[,2])
+per_tumor_combined$Signature_long <- factor(per_tumor_combined$Signature_long, levels=signatures_names_matrix[,"Etiology_sig"])
 
 # "Proportion of total per-tumor proportional effect size"
 ggplot(data = per_tumor_combined) + 
@@ -1122,9 +1152,9 @@ weights_combined_per_tumor_type$tumor_type <-
 
 # weights_combined_per_tumor_type$tumor_type <- factor(weights_combined_per_tumor_type$tumor_type, levels=as.character(ordering_of_tumors))
 
-weights_combined_per_tumor_type$Signature_long <- signatures_names_matrix[weights_combined_per_tumor_type$Signature,2]
+weights_combined_per_tumor_type$Signature_long <- signatures_names_matrix[weights_combined_per_tumor_type$Signature,"Etiology_sig"]
 weights_combined_per_tumor_type$Signature <- factor(weights_combined_per_tumor_type$Signature, levels=signatures_names_matrix[,1])
-weights_combined_per_tumor_type$Signature_long <- factor(weights_combined_per_tumor_type$Signature_long, levels=signatures_names_matrix[,2])
+weights_combined_per_tumor_type$Signature_long <- factor(weights_combined_per_tumor_type$Signature_long, levels=signatures_names_matrix[,"Etiology_sig"])
 
 
 weights_combined_per_tumor_type <- weights_combined_per_tumor_type %>%
@@ -1235,21 +1265,21 @@ action_effects_m <- pivot_longer(data = action_effects, cols = 2:20,names_to = "
 
 
 
-signatures_names_matrix["SBS32",2] <- "Treatment with azathioprine (32)"
-signatures_names_matrix["SBS31",2] <- "Prior treatment with platinum drugs (31)"
-signatures_names_matrix["SBS35",2] <- "Prior treatment with platinum drugs (35)"
-signatures_names_matrix["SBS38",2] <- "Potentially indirect damage from UV light (38)"
-signatures_names_matrix["SBS42",2] <- "Exposure to haloalkanes (42)"
-signatures_names_matrix["SBS1",2] <- "Deamination with age, clock-like (1)"
+signatures_names_matrix["SBS32","Etiology_sig"] <- "Treatment with azathioprine (32)"
+signatures_names_matrix["SBS31","Etiology_sig"] <- "Prior treatment with platinum drugs (31)"
+signatures_names_matrix["SBS35","Etiology_sig"] <- "Prior treatment with platinum drugs (35)"
+signatures_names_matrix["SBS38","Etiology_sig"] <- "Potentially indirect damage from UV light (38)"
+signatures_names_matrix["SBS42","Etiology_sig"] <- "Exposure to haloalkanes (42)"
+signatures_names_matrix["SBS1","Etiology_sig"] <- "Deamination with age, clock-like (1)"
 
 
 action_weights_m$Signature <- factor(action_weights_m$Signature,
                                      levels=c(clocklike_signatures,actionable_signatures,"Unknown signatures"),
-                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),2],"Unknown signatures"))
+                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Unknown signatures"))
 
 action_effects_m$Signature <- factor(action_effects_m$Signature,
                                      levels=c(clocklike_signatures,actionable_signatures,"Unknown signatures"),
-                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),2],"Unknown signatures"))
+                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Unknown signatures"))
 
 
 action_weights_m$Signature <- 
@@ -1506,7 +1536,7 @@ all_weights_and_effects$Signature[
 ] <- 
   signatures_names_matrix[all_weights_and_effects$Signature[
     all_weights_and_effects$Signature %in% c(actionable_signatures,clocklike_signatures)
-  ],2]
+  ],"Etiology_sig"]
 
 
 all_weights_and_effects$Signature <- factor(all_weights_and_effects$Signature, 
