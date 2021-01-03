@@ -1,41 +1,45 @@
-#' @import cancereffectsizeR
-#' 
-#' Get signature contributions to variants
-#' 
-#' Builds a data table containing the contributions of each SNV signature to each variant in CES selection output
-#' for all tumors with each variant.
-#' 
-#' For each selected variant and each tumor with the variant, set the contribution of each SNV signature to be the 
-#' weight of the signature in the tumor multipled by the relative rate of the trinuc context within the signature, 
-#' divided by the relative rate of the trinuc SNV in the tumor. All required information (SNV signature definitions,
-#' tumor signature weights, trinuc-specific mutation rates, variant annotations) is taken from the input CESAnalysis.
-#' 
-#' @param ces_output CESAnalysis with selection intensities calculated for variants of interest
-#' @param provided_signature_weights For use when get_signature_weights() will not work on CESAnalysis
-#' because you provided the rates directly.
-#' @param min_variant_freq Minimum number of affected tumors for a variant to be included in output
-#' @param remove_nonsplice_silent Exclude synonymous coding mutations unless they are near splice sites
+#'   Get signature contributions to variants
+#'
+#'   Builds a data table containing the contributions of each SNV signature to each
+#'   variant in CES selection output for all tumors with each variant.
+#'
+#'   For each selected variant and each tumor with the variant, set the contribution of
+#'   each SNV signature to be the weight of the signature in the tumor multipled by the
+#'   relative rate of the trinuc context within the signature, divided by the relative
+#'   rate of the trinuc SNV in the tumor. All required information (SNV signature
+#'   definitions, tumor signature weights, trinuc-specific mutation rates, variant
+#'   annotations) is taken from the input CESAnalysis.
+#'
+#' @param ces_output CESAnalysis with selection intensities calculated for variants of
+#'   interest
+#' @param min_variant_freq Minumum variant frequency to be included in contribution
+#'   analysis
+#' @param run_name If the CESAnalysis has variant effect sizes from multiple runs of
+#'   ces_variant, specify which run to use by name
+#' @param remove_nonsplice_silent Exclude synonymous coding mutations unless they are near
+#'   splice sites
 #' @return A data table covering all tumors and variants
 
-population_scaled_effect_per_tumor <- function(ces_output, provided_signature_weights = NULL,min_variant_freq = 2, remove_nonsplice_silent = F) {
+population_scaled_effect_per_tumor <- function(ces_output, run_name = NULL, min_variant_freq = 2, remove_nonsplice_silent = F) {
+  if (! require("cancereffectsizeR")) {
+    stop("Could not load cancereffectsizeR pacakge; is it installed?")
+  }
   if(! is(ces_output, "CESAnalysis")) {
-    stop("ces_ouput should be a CESAnalysis object", call. = F)
+    stop("ces_output should be a CESAnalysis object", call. = F)
   }
   
   # Get signature definition matrix (rows = signature names, columns = relative rates of trinuc-context-specific SNVs)
-  # This works with all versions of CES that have a reference_data accessor (earliest versions put
-  # definitions directly at $snv_signatures, newer have a list of information there)
-  signature_defs = ces_output$reference_data$snv_signatures
-  if (! is(signature_defs, "data.frame")) {
-    signature_defs = signature_defs$signatures
-  }
+  signature_defs = ces_output$reference_data$snv_signatures$signatures
   signature_names = rownames(signature_defs)
   
-  # Get tumor-specific signature weights
-  if(is.null(provided_signature_weights)){
-    signature_weights = get_signature_weights(ces_output, include_tumors_without_data = TRUE)
-  }else{
-    signature_weights = provided_signature_weights 
+  # Get data.table with signature weights (one row per tumor)
+  signature_weights = get_signature_weights(ces_output)
+  if (is.null(signature_weights)) {
+    stop("Can't run because no signature weights are associated with this analysis.\n",
+    "If you have them, you can add them to the CESAnalysis with set_signature_weights().")
+  }
+  if(nrow(signature_weights) != nrow(ces_output$samples)) {
+    stop("Not all samples in CESAnalysis have assigned signature weights, so can't run.")
   }
   
   # For efficiency, drop signatures where weights are always 0
@@ -51,21 +55,58 @@ population_scaled_effect_per_tumor <- function(ces_output, provided_signature_we
   nrsi_colnames = paste(signature_names, "nrsi", sep = "_")
   
   
-  # Get SIs of variants of interest
-  selection_data = ces_output$selection[tumors_with_variant >= min_variant_freq]
-  
-  
-  # if requested, remove silent variants that are near a splice site
-  if (remove_nonsplice_silent) {
-    aac_ids = selection_data[variant_type == "aac", variant]
-    silent_nonsplice = ces_output$mutations$amino_acid_change[aac_id %in% aac_ids & next_to_splice == F & aa_ref == aa_alt, aac_id]
-    selection_data= selection_data[! variant %in% silent_nonsplice]
+  # Get selection intensity data
+  all_si_output = ces_output$selection
+  if (length(all_si_output) == 0) {
+    stop("No variant effect data associated with the CESAnalysis, so can't run")
+  } else {
+    if (is.null(run_name)) {
+      if(length(all_si_output) == 1) {
+        selection_data = all_si_output[[1]]
+      } else {
+        stop("ces_variant() has been run on this CESAnalysis multiple times. Specify which run to use with run_name.")
+      }
+    } else {
+      if (! is.character(run_name) || length(run_name) != 1)  {
+        stop("run_name should be 1-length character")
+      }
+      if (! run_name %in% names(all_si_output)) {
+        names_used = names(all_si_output)
+        stop("Chosen run_name not found. Found ces_variant runs named ", paste(names_used, collapse = ", "), '.')
+      } else {
+        selection_data= all_si_output[[run_name]]
+      }
+    }
   }
   
+  # make sure there is just one fitted selection intensity, and give it the standard name
+  si_col = attr(selection_data, "si_cols", exact = T)
+  if (length(si_col) > 1) {
+    stop("There are multiple SI columns in variant effect data, which isn't yet supported.")
+  }
+  setnames(selection_data, si_col, "selection_intensity")
+  
+  # MAF frequency column name will vary depending on if there are multiple CESAnalysis groups
+  if ("total_maf_freq" %in% colnames(selection_data)) {
+    selection_data = selection_data[total_maf_freq >= min_variant_freq]
+  } else {
+    selection_data = selection_data[maf_frequency >= min_variant_freq]
+  }
+  
+  message("Using variant effect data from ", selection_data[, .N], " variants...")
+  
+  # if requested, remove silent variants unless they are near splice sites
+  if (remove_nonsplice_silent) {
+    nonsplice_silent_ind = selection_data[variant_type == "aac" & essential_splice == FALSE & aa_ref == aa_alt, which = T]
+    num_nonsplice_silent = length(nonsplice_silent_ind)
+    if (num_nonsplice_silent > 0) {
+      selection_data = selection_data[! nonsplice_silent_ind]
+      message("Leaving out ", num_nonsplice_silent, " synonymous coding variants that are not near splice sites...")
+    }
+  }
   
   trinuc_rates = ces_output$trinuc_rates
   setkey(trinuc_rates, "Unique_Patient_Identifier")
-  
   
   # Ensure that we're only handling AACs and SNVs
   other_variant_type_index = selection_data[! variant_type %in% c("snv", "aac"), which = T]
@@ -74,12 +115,15 @@ population_scaled_effect_per_tumor <- function(ces_output, provided_signature_we
     warning("Some variants are neither coding mutations nor noncoding SNVs; these were skipped.")
   }
   
+  # Make sure filtering didn't remove all variants
+  if(selection_data[, .N] == 0) {
+    stop("No variants remain.")
+  }
   
-  # Colllect SNV IDs: just the variant ID for SNVs; for AACs, pull information from mutation annotations
-  selection_data[variant_type == "snv", snv_ids := list(list(variant)), by = "variant"]
-  
-  selection_data[variant_type == "aac", snv_ids := ces_output$mutations$amino_acid_change[variant, all_snv_ids]]
-  missing_aac_index = selection_data[, bad := is.null(snv_ids[[1]]), by = "variant"][bad == T, which = T]
+  # Collect SNV IDs: just the variant ID for SNVs; for AACs, pull information from mutation annotations
+  selection_data[variant_type == "snv", snv_ids := list(list(variant_id)), by = "variant_id"]
+  selection_data[variant_type == "aac", snv_ids := constituent_snvs]
+  missing_aac_index = selection_data[, bad := is.null(snv_ids[[1]]), by = "variant_id"][bad == T, which = T]
   if (length(missing_aac_index) > 0) {
     missing = selection_data[missing_aac_index, variant]
     selection_data = selection_data[! missing_aac_index]
@@ -88,8 +132,18 @@ population_scaled_effect_per_tumor <- function(ces_output, provided_signature_we
     }
   }
   
-  variant_snv_pairings = selection_data[, .(snv = unlist(snv_ids), selection_intensity), by = "variant"]
-  variant_snv_pairings[, trinuc_context := ces_output$mutations$snv[snv, trinuc_mut]]
+  variant_snv_pairings = selection_data[, .(snv = unlist(snv_ids), selection_intensity), by = "variant_id"]
+  
+  # get trinucleotide contexts of all SNVs
+  reselected_snv = select_variants(ces_output, variant_passlist = variant_snv_pairings$snv)
+  reselected_snv = reselected_snv[variant_snv_pairings$snv, on = "variant_id", nomatch = NULL]
+  
+  # this shouldn't happen
+  if (reselected_snv[, .N] != variant_snv_pairings[, .N]) {
+    stop("Failed to select all SNVs from CESAnalysis (please report the bug).")
+  }
+  
+  variant_snv_pairings[, trinuc_context := reselected_snv$trinuc_mut]
   
   # Ensure that all SNVs have trinuc context annotation
   bad_snv_index = variant_snv_pairings[is.na(trinuc_context), which = T]
@@ -102,8 +156,8 @@ population_scaled_effect_per_tumor <- function(ces_output, provided_signature_we
   }
   
   # Subset MAF to just the SNVs we need for quicker access
-  maf = ces_output$maf[snv_id %in% variant_snv_pairings$snv]
-  setkey(maf, "snv_id")
+  maf = ces_output$maf[variant_snv_pairings$snv, on = "variant_id", nomatch = NULL]
+  setkey(maf, "variant_id")
   
   # For each SNV that constitutes a coding mutation (or just the one mutation for nonconding SNVs), 
   # get the contribution of each signature to each tumor that has the mutation.
@@ -140,8 +194,5 @@ population_scaled_effect_per_tumor <- function(ces_output, provided_signature_we
   }
   
   return(rbindlist(mapply(process_snv, variant_snv_pairings$variant, variant_snv_pairings$snv, 
-                          variant_snv_pairings$trinuc_context, variant_snv_pairings$selection_intensity)))
+                          variant_snv_pairings$trinuc_context, variant_snv_pairings$selection_intensity, SIMPLIFY = F)))
 }
-
-
-
