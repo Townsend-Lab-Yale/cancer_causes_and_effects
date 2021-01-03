@@ -24,6 +24,9 @@ population_scaled_effect_per_tumor <- function(ces_output, run_name = NULL, min_
   if (! require("cancereffectsizeR")) {
     stop("Could not load cancereffectsizeR pacakge; is it installed?")
   }
+  if (! require("data.table")) {
+    stop("Could not load data.table package; is it installed?")
+  }
   if(! is(ces_output, "CESAnalysis")) {
     stop("ces_output should be a CESAnalysis object", call. = F)
   }
