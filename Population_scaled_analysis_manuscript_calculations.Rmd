@@ -1176,8 +1176,8 @@ action_weights <- as.data.frame(matrix(data = NA,nrow=length(unique(weights_comb
 
 action_effects <- as.data.frame(matrix(data = NA,nrow=length(unique(weights_combined_per_tumor_type$tumor_type)),
                                        ncol=length(actionable_signatures)+4),stringsAsFactors=F)
-colnames(action_weights) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Unknown signatures")
-colnames(action_effects) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Unknown signatures")
+colnames(action_weights) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures")
+colnames(action_effects) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures")
 
 action_weights$tumor_type <- unique(weights_combined_per_tumor_type$tumor_type)
 action_effects$tumor_type <- unique(weights_combined_per_tumor_type$tumor_type)
@@ -1274,12 +1274,12 @@ signatures_names_matrix["SBS1","Etiology_sig"] <- "Deamination with age, clock-l
 
 
 action_weights_m$Signature <- factor(action_weights_m$Signature,
-                                     levels=c(clocklike_signatures,actionable_signatures,"Unknown signatures"),
-                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Unknown signatures"))
+                                     levels=c(clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures"),
+                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Non-actionable or unknown signatures"))
 
 action_effects_m$Signature <- factor(action_effects_m$Signature,
-                                     levels=c(clocklike_signatures,actionable_signatures,"Unknown signatures"),
-                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Unknown signatures"))
+                                     levels=c(clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures"),
+                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Non-actionable or unknown signatures"))
 
 
 action_weights_m$Signature <- 
@@ -1317,7 +1317,7 @@ actionable_weight_desc <- action_effects_m %>%
   group_by(tumor_type) %>%
   filter(! Signature %in%  c("Deamination with age, clock-like (1)",
                              "Unknown, clock-like (5)",
-                             "Unknown signatures")) %>% 
+                             "Non-actionable or unknown signatures")) %>% 
   summarize(sum_weight = sum(weight)) %>%
   arrange(sum_weight)
 
@@ -1490,7 +1490,7 @@ action_effects_m %>%
   filter(tumor_type == "LGG")
 
 action_effects_m %>% 
-  filter(Signature == "Unknown signatures") %>% 
+  filter(Signature == "Non-actionable or unknown signatures") %>% 
   arrange(desc(weight))
 
 ```
@@ -1525,7 +1525,7 @@ combined_clocklike_w_dotplot
 all_weights_and_effects$Signature[
   !all_weights_and_effects$Signature %in% c(actionable_signatures,clocklike_signatures)
 ] <- 
-  "Unknown signatures"
+  "Non-actionable or unknown signatures"
 
 
 
