@@ -11,14 +11,32 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(cancereffectsizeR) # use v2.0
+library(cancereffectsizeR) # use v2.0 
 library(cowplot)
+library(RColorBrewer)
 
 variant_name_extracter <- function(variant_names_vec){
   variant_names <- strsplit(x = variant_names_vec, split = "_")
   variant_names <- unlist(lapply(variant_names, function(x) paste(c(x[1],x[2]),collapse = " ")))
   return(variant_names)
 }
+
+color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer.pal(n = 6,name = "Set3"),"black")
+                               , nm = c("Deamination with age, clock-like (1)",
+                                        "Unknown, clock-like (5)",
+                                        "APOBEC (2,13)",
+                                        "Defective homologous recombination (3)",
+                                        "Tobacco (4,29)",
+                                        "UV light (7a–d,38)",
+                                        "Prior treatment (11,31,32,35)",
+                                        "Mutagenic chemical exposure (22,24,42)", 
+                                        "Non-actionable or unknown signatures"
+                               ))
+
+# switching two so UV light is the bright yellow
+color_vec_fullname["UV light (7a–d,38)"] <- "#FFFFB3"
+color_vec_fullname["Defective homologous recombination (3)"] <- "#FB8072"
+
 ```
 
 # Load in data from analyses
@@ -113,10 +131,45 @@ these_colors <- setNames(
                             as.character(sig_weights$name)))))
 
 
+these_colors["NFE2L2 R34P"] <- "#1b9e77"
+these_colors["OR13G1 L79L"] <- "#e6ab02"
+these_colors["TP53 R282W"] <- "#d95f02"
+
+sig_weights %>%
+  mutate(name = factor(name,levels = signatures_names_matrix[,"Etiology_sig"])) %>%
+  mutate(name = 
+           forcats::fct_collapse(
+             name,
+             `UV light (7a,7b,7c,7d)` = c("UV light (7a)",
+                                          "UV light (7b)",
+                                          "UV light (7c)",
+                                          "UV light (7d)"),
+             `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+             `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+             `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+                                                 "Platinum drug chemotherapy (31)",
+                                                 "Azathioprine treatment (used for immunosuppression) (32)",
+                                                 "Prior chemotherapy treatment (35)"),
+             `Mutagenic chemical exposure (22,24,42)` = c("Aristolochic acid exposure (22)",
+                                                          "Aflatoxin exposure (24)",
+                                                          "Occupational exposure to haloalkanes (42)")
+             
+           )
+  ) %>% 
+  group_by(name) %>%
+  summarize(value = sum(value)) -> sig_weights_named
+
+color_vec_fullname_fig1 <- setNames(object = c(color_vec_fullname["Tobacco (4,29)"],color_vec_fullname["Unknown, clock-like (5)"],color_vec_fullname["Non-actionable or unknown signatures"]),nm = c("Tobacco smoking (4)","Unknown, clock-like (5)","Unknown (8)"))
+
+# color_vec_fullname_8 <- c(color_vec_fullname, setNames(object = "black",nm = "Unknown (8)"))
+
+sig_weights_named$name <- forcats::fct_reorder(sig_weights_named$name,sig_weights_named$value)
+
 signature_proportion_plot <- 
   ggplot(data = sig_weights, aes(y=value,x=1)) + 
   geom_bar(aes(fill=name),stat = "identity",color="white",size=0.2) + 
-  scale_fill_manual(values = these_colors,name="Signature") +
+  scale_fill_manual(values = color_vec_fullname_fig1,
+                    name="Signature") +
   # scale_x_discrete(limits=c(1,1)) +
   labs(y="Proportionate signature weight") + 
   theme_classic() + 
@@ -125,7 +178,8 @@ signature_proportion_plot <-
   theme(axis.text.x = element_blank(),
         #axis.title.x = element_blank(),
         #axis.ticks.x = element_blank(),
-        legend.position  = "none", axis.ticks.x = element_blank())  
+        legend.position  = "none", 
+        axis.ticks.x = element_blank())  
 
 signature_proportion_plot
 
@@ -226,10 +280,12 @@ signatures_m_relevant$Signatures <- factor(signatures_m_relevant$Signatures,
 
 
 
-signature_trinuc_weights_ordered <- ggplot(data = signatures_m_relevant, aes(x=name,y=value)) + 
-  geom_bar(stat="identity", aes(color=variant,fill=Signatures)) + 
+signature_trinuc_weights_ordered <- ggplot(data = signatures_m_relevant, 
+                                           aes(x=name,y=value)) + 
+  geom_bar(stat="identity", aes(color=variant,
+                                fill=Signatures)) + 
   facet_wrap(facets = "Signatures",ncol = 1,scales = "free_y") + 
-  scale_fill_manual(values = these_colors,na.value="gray") + 
+  scale_fill_manual(values = color_vec_fullname_fig1,na.value="gray") + 
   scale_color_manual(values = these_colors) + 
   theme_classic() + 
   theme(axis.text.x = element_text(angle=90,color=cols_to_plot,vjust=0.5),
@@ -254,6 +310,11 @@ signatures_m_relevant_for_legend$variant[3] <- levels(signatures_m_relevant$Sign
 
 # c("TP53 R282W","NFE2L2 R34P","OR13G1 L79L","Damage by reactive oxygen species (18)","Unknown (16)","Tobacco smoking (4)")
 signatures_m_relevant_for_legend$variant <- factor(signatures_m_relevant_for_legend$variant, levels=unique(signatures_m_relevant_for_legend$variant))
+
+
+these_colors["Unknown (8)"] <- color_vec_fullname_fig1["Unknown (8)"]
+these_colors["Unknown, clock-like (5)"] <- color_vec_fullname_fig1["Unknown, clock-like (5)"]
+these_colors["Tobacco smoking (4)"] <- color_vec_fullname_fig1["Tobacco smoking (4)"]
 
 signature_trinuc_weights_ordered_legend <- ggplot(data = signatures_m_relevant_for_legend, aes(x=name,y=value)) + 
   geom_bar(stat="identity", aes(fill=variant)) + 
@@ -453,12 +514,12 @@ JSD_combined_for_supp_image <- JSD_combined
 
 
 JSD_combined_for_supp_image$tumor_type <- forcats::fct_recode(JSD_combined_for_supp_image$tumor_type,
-                                               `SKCM, primary`="SKCM_primary",
-                                               `SKCM, metastases` = "SKCM_metastasis",
-                                               `HNSC (HPV+)` = "HNSC_HPVpos",
-                                               `HNSC (HPV−)` = "HNSC_HPVneg",
-                                               `BRCA (ER–)` = "BRCA_ER_neg",
-                                               `BRCA (ER+)` = "BRCA_ER_pos")
+                                                              `SKCM, primary`="SKCM_primary",
+                                                              `SKCM, metastases` = "SKCM_metastasis",
+                                                              `HNSC (HPV+)` = "HNSC_HPVpos",
+                                                              `HNSC (HPV−)` = "HNSC_HPVneg",
+                                                              `BRCA (ER–)` = "BRCA_ER_neg",
+                                                              `BRCA (ER+)` = "BRCA_ER_pos")
 
 
 JSD_ggplot_no_recur_info <- ggplot(data = JSD_combined_for_supp_image, aes(x=tumor_type, y= JSD)) + 
@@ -591,9 +652,69 @@ signatures_present_for_plot$Signature <- factor(signatures_present_for_plot$Sign
 
 
 
+
+# new color palette
+# signatures_present_for_plot %>%
+#   mutate(Signature = 
+#            forcats::fct_collapse(
+#              Signature,
+#              `UV light (7a,7b,7c,7d)` = c("UV light (7a)",
+#                                           "UV light (7b)",
+#                                           "UV light (7c)",
+#                                           "UV light (7d)"),
+#              `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+#              `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+#              `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+#                                                  "Platinum drug chemotherapy (31)",
+#                                                  "Azathioprine treatment (used for immunosuppression) (32)",
+#                                                  "Prior chemotherapy treatment (35)"),
+#              `Mutagenic chemical exposure (22,24,42)` = c("Aristolochic acid exposure (22)",
+#                                                           "Aflatoxin exposure (24)",
+#                                                           "Occupational exposure to haloalkanes (42)")
+#              
+#            )
+#   )
+
+
+these_colors[c("APOBEC (2)","APOBEC (13)")] <- color_vec_fullname["APOBEC (2,13)"]
+these_colors["Deamination with age (1)"] <- color_vec_fullname["Deamination with age, clock-like (1)"]
+these_colors["Defective homologous recombination (3)"] <- color_vec_fullname["Defective homologous recombination (3)"]
+these_colors["Tobacco smoking (4)"] <- color_vec_fullname["Tobacco (4,29)"]
+these_colors["Unknown, clock-like (5)"] <- color_vec_fullname["Unknown, clock-like (5)"]
+these_colors[c("UV light (7b)","UV light (7c)","UV light (7d)")] <- color_vec_fullname["UV light (7a–d,38)"]
+these_colors[c("Polymerase eta somatic hypermutation (9)","Unknown (39)","Unknown (40)")] <- "black"
+
+
+signatures_present_for_plot %>%
+  mutate(Signature = 
+           forcats::fct_collapse(
+             Signature,
+             `UV light (7a–d,38)` = c("UV light (7a)",
+                                      "UV light (7b)",
+                                      "UV light (7c)",
+                                      "UV light (7d)",
+                                      "Potentially indirect damage from UV light (38)",
+                                      "UV light (7a,7b,7c,7d)"),
+             `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+             `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+             `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+                                                 "Prior treatment with platinum drugs (31)",
+                                                 "Treatment with azathioprine (32)",
+                                                 "Prior treatment with platinum drugs (35)"),
+             `Mutagenic chemical exposure (22,24,42)` = c("Aristolochic acid exposure (22)",
+                                                          "Aflatoxin exposure (24)",
+                                                          "Exposure to haloalkanes (42)")
+             
+           ) 
+  )%>%
+  mutate(Signature = 
+           forcats::fct_recode(Signature,
+                               `Deamination with age, clock-like (1)` = "Deamination with age (1)")) -> signatures_present_for_plot
+
+
 legend_for_plot <-  cowplot::get_legend( ggplot(signatures_present_for_plot, aes(fill=Signature)) + 
                                            geom_bar(aes(x=xx,y=yy),stat = "identity",color="black") + 
-                                           scale_fill_manual(values = these_colors) + 
+                                           scale_fill_manual(values = color_vec_fullname,na.value="black") + 
                                            guides(fill=guide_legend(nrow=2)) +
                                            theme(legend.position = "bottom"))
 
@@ -699,6 +820,35 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
                                                     levels=c(as.character(sigs_present_ordered),"Other signatures"))
   
   
+  these_data_nozero_forplot %>%
+    mutate(sig_collapsed = 
+             forcats::fct_collapse(
+               sig_collapsed,
+               `UV light (7a–d,38)` = c("UV light (7a)",
+                                        "UV light (7b)",
+                                        "UV light (7c)",
+                                        "UV light (7d)",
+                                        "Potentially indirect damage from UV light (38)",
+                                        "UV light (7a,7b,7c,7d)"),
+               `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+               `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+               `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+                                                   "Prior treatment with platinum drugs (31)",
+                                                   "Treatment with azathioprine (32)",
+                                                   "Prior treatment with platinum drugs (35)"),
+               `Mutagenic chemical exposure (22,24,42)` = c("Aristolochic acid exposure (22)",
+                                                            "Aflatoxin exposure (24)",
+                                                            "Exposure to haloalkanes (42)")
+               
+             )
+    ) %>% 
+    mutate(sig_collapsed = 
+             forcats::fct_recode(sig_collapsed,
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)")) %>% 
+    group_by(Tumor,data_type,bar_label_2,sig_collapsed) %>%
+    summarize(Weight_prop = sum(Weight_prop)) -> these_data_nozero_forplot
+  
+  
   NRSI_v_weight_plot_ggplot <- 
     ggplot(data = these_data_nozero_forplot,
            aes(x=data_type,
@@ -709,7 +859,7 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
     facet_wrap(~ Tumor,nrow=1) + 
     theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) + 
     labs(y="Proportion of total weight", x= "Type of weight") + 
-    scale_fill_manual(values = these_colors) + 
+    scale_fill_manual(values = color_vec_fullname,na.value="black") + 
     theme(legend.position = "none") 
   
   
@@ -989,9 +1139,9 @@ ggplot() +
 ```{r legend work part 2}
 
 for_sig_scale$sig_and_shape <- factor(c("significant, effect",
-                                 "nonsignificant, effect",
-                                 "significant, weight",
-                                 "nonsignificant weight"))
+                                        "nonsignificant, effect",
+                                        "significant, weight",
+                                        "nonsignificant weight"))
 
 ggplot() + 
   geom_text(data = subset(weight_and_effect_data,data_type=="weight" & significant == FALSE), 
@@ -1007,8 +1157,8 @@ ggplot() +
             aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
             label="\u25D7", family = "Arial Unicode MS",col="red") + 
   # geom_text(data = for_sig_scale, 
-            # aes(x=tumor_type, y=Signature,size=Weight_prop_mean,col = significant),
-            # label="\u25D7", family = "Arial Unicode MS")
+  # aes(x=tumor_type, y=Signature,size=Weight_prop_mean,col = significant),
+  # label="\u25D7", family = "Arial Unicode MS")
   geom_text(data = subset(for_sig_scale, data_type == "effect" & significant == T), 
             aes(x=tumor_type, y=Signature,size=Weight_prop_mean,col = sig_and_shape),
             label="\u25D7", family = "Arial Unicode MS") +
@@ -1022,16 +1172,16 @@ ggplot() +
             aes(x=tumor_type, y=Signature,size=Weight_prop_mean,col = sig_and_shape),
             label="\u25D6", family = "Arial Unicode MS") +
   scale_color_manual(values = setNames(nm = c("significant, effect",
-                                 "nonsignificant, effect",
-                                 "significant, weight",
-                                 "nonsignificant weight"),
-                                 object = c("red","gray50","black","gray90")),
+                                              "nonsignificant, effect",
+                                              "significant, weight",
+                                              "nonsignificant weight"),
+                                       object = c("red","gray50","black","gray90")),
                      name = "Significance, data type") +
   scale_size(range = c(0, 10),breaks = c(0,0.05,0.1,0.2,0.4,0.6,1),name = "Proportional signature | cancer effect  weight") +
   theme_classic() -> dotplot_legend_plot
-  # theme(legend.position = "bottom") +
-  # guides(col = guide_legend(nrow = 2,ncol=2)) 
-  
+# theme(legend.position = "bottom") +
+# guides(col = guide_legend(nrow = 2,ncol=2)) 
+
 
 dotplot_legend <- cowplot::get_legend(dotplot_legend_plot)
 
@@ -1161,6 +1311,7 @@ weights_combined_per_tumor_type <- weights_combined_per_tumor_type %>%
   mutate(tumor_type_sig = paste(tumor_type,Signature))
 
 actionable_signatures <- c("SBS2",
+                           "SBS3",
                            "SBS13",
                            "SBS4",
                            "SBS7a","SBS7b","SBS7c","SBS7d",
@@ -1260,8 +1411,8 @@ for(tumor_ind in 1:nrow(action_effects)){
 }
 
 
-action_weights_m <- pivot_longer(data = action_weights, cols = 2:20,names_to = "Signature",values_to = "weight")
-action_effects_m <- pivot_longer(data = action_effects, cols = 2:20,names_to = "Signature",values_to = "weight")
+action_weights_m <- pivot_longer(data = action_weights, cols = -tumor_type, names_to = "Signature",values_to = "weight")
+action_effects_m <- pivot_longer(data = action_effects, cols = -tumor_type, names_to = "Signature",values_to = "weight")
 
 
 
@@ -1390,14 +1541,44 @@ action_effects_m$tumor_type <- factor(action_effects_m$tumor_type,levels=actiona
 # 
 
 
+# col_vec
+
+# action_weights_m$Signature 
+
+
+action_weights_m %>%
+  mutate(Signature = 
+           forcats::fct_collapse(
+             Signature,
+             `UV light (7a–d,38)` = c("UV light (7a)",
+                                      "UV light (7b)",
+                                      "UV light (7c)",
+                                      "UV light (7d)",
+                                      "Potentially indirect damage from UV light (38)",
+                                      "UV light (7a,7b,7c,7d)"),
+             `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+             `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+             `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+                                                 "Prior treatment with platinum drugs (31)",
+                                                 "Treatment with azathioprine (32)",
+                                                 "Prior treatment with platinum drugs (35)"),
+             `Mutagenic chemical exposure (22,24,42)` = c("Aristolochic acid exposure (22)",
+                                                          "Aflatoxin exposure (24)",
+                                                          "Exposure to haloalkanes (42)")
+             
+           )
+  ) %>% 
+  group_by(tumor_type,Signature) %>%
+  summarize(weight = sum(weight)) -> action_weights_m_collapsed
+
 
 # sideways
 
-action_weights_m_plot <- ggplot(action_weights_m) + 
+action_weights_m_plot <- ggplot(action_weights_m_collapsed) + 
   geom_bar(aes(x=tumor_type,y=weight,fill=Signature),stat="identity") + 
   theme_bw() + 
   # theme(axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) +
-  scale_fill_manual(values = col_vec) + 
+  scale_fill_manual(values = color_vec_fullname) + 
   labs(title="Weights",y="Weight") + 
   coord_flip() + 
   theme(legend.position = "none") + 
@@ -1406,11 +1587,41 @@ action_weights_m_plot <- ggplot(action_weights_m) +
   theme(plot.title = element_text(hjust = 0.5))
 action_weights_m_plot
 
-action_effects_m_plot <- ggplot(action_effects_m) + 
+
+
+action_effects_m %>%
+  mutate(Signature = 
+           forcats::fct_collapse(
+             Signature,
+             `UV light (7a–d,38)` = c("UV light (7a)",
+                                      "UV light (7b)",
+                                      "UV light (7c)",
+                                      "UV light (7d)",
+                                      "Potentially indirect damage from UV light (38)",
+                                      "UV light (7a,7b,7c,7d)"),
+             `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+             `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+             `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+                                                 "Prior treatment with platinum drugs (31)",
+                                                 "Treatment with azathioprine (32)",
+                                                 "Prior treatment with platinum drugs (35)"),
+             `Mutagenic chemical exposure (22,24,42)` = c("Aristolochic acid exposure (22)",
+                                                          "Aflatoxin exposure (24)",
+                                                          "Exposure to haloalkanes (42)")
+             
+           )
+  ) %>% 
+  group_by(tumor_type,Signature) %>%
+  summarize(weight = sum(weight)) -> action_effects_m_collapsed
+
+
+
+
+action_effects_m_plot <- ggplot(action_effects_m_collapsed) + 
   geom_bar(aes(x=tumor_type,y=weight,fill=Signature),stat="identity") + 
   theme_bw() + 
   # theme(axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) +
-  scale_fill_manual(values = col_vec) + 
+  scale_fill_manual(values = color_vec_fullname) + 
   labs(title="Effects",y="Weight") + 
   coord_flip() + 
   # theme(legend.position = "none") + 
@@ -1682,4 +1893,24 @@ removed_yg_tumors <- unique(c(HNSC_HPVneg_rt,SKCM_prim_rt,SKCM_met_rt))
 write.table(x = removed_yg_tumors,file = "output_data/table_s1_removed_YG_tumors.csv",quote = F,row.names = F,col.names = F)
 
 ```
+
+
+
+# Driver centric signature mutational effect size 
+
+
+```{r}
+# colors 
+# color_vec_fullname
+
+
+
+
+
+
+```
+
+
+
+
 
