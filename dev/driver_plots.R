@@ -1031,6 +1031,17 @@ ggsave(filename = "dev/Lung_combined.png",height = 4,width = 8,
        Lung_combined)
 
 
+# ESCA ---- 
+
+ESCA_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "ESCA",
+                                                      Bailey_tumor_type = "ESCA",
+                                                      signatures_below_line = c("SBS16"),
+                                                      signatures_below_line_grouped = "Alcohol-associated (16)",
+                                                      drivers_to_plot = 10,
+                                                      ordered_by_total_weight = F,
+                                                      text_font_size = 10,
+                                                      choose_variants_by_total_volume = T, 
+                                                      plot_title = "ESCA")
 
 
 
@@ -1304,5 +1315,7 @@ all_driver_figure_w_legend_2x2 <- plot_grid(leg_legend,driver_fig_w_lab, ncol=1,
 
 
 cowplot::save_plot(all_driver_figure_w_legend_2x2,filename = "dev/combined_driver_figure_w_legend_2x2.png",base_height = 7.5,base_width = 13)
+
+cowplot::save_plot(all_driver_figure_w_legend_2x2,filename = "output_data/figure_3_variant_effects.png",base_height = 7.5,base_width = 13)
 
 

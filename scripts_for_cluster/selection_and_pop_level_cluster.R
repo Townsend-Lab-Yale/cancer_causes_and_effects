@@ -99,13 +99,18 @@ if(inputs["-tumor_name",] == "ESCA"){
                                                        use_dS_exome2genome=TRUE,sample_group = "ESCA")
   
   # trinucs on ESCC
+  # include signature 16 in accordance with https://www.annalsofoncology.org/article/S0923-7534(19)45461-6/fulltext
+  
+  escc_to_remove <- c(as.character(cancereffectsizeR::suggest_cosmic_signatures_to_remove(
+    cancer_type = "Eso-SCC",treatment_naive = T
+  )),"SBS89")
+  
+  escc_to_remove <- escc_to_remove[-which(escc_to_remove == "SBS16")]
+  
   analysis <- cancereffectsizeR::trinuc_mutation_rates(cesa = analysis, 
                                                        signature_set = "COSMIC_v3.1", 
                                                        cores = as.numeric(inputs["-cores",]),
-                                                       signatures_to_remove = 
-                                                         c(as.character(cancereffectsizeR::suggest_cosmic_signatures_to_remove(
-                                                           cancer_type = "Eso-AdenoCA",treatment_naive = T
-                                                         )),"SBS89"), 
+                                                       signatures_to_remove = escc_to_remove, 
                                                        use_dS_exome2genome=TRUE,sample_group = "ESCC")
   
   

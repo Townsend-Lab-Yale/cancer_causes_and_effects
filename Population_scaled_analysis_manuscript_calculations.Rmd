@@ -21,7 +21,7 @@ variant_name_extracter <- function(variant_names_vec){
   return(variant_names)
 }
 
-color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer.pal(n = 6,name = "Set3"),"black")
+color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer.pal(n = 7,name = "Set3"),"black")
                                , nm = c("Deamination with age, clock-like (1)",
                                         "Unknown, clock-like (5)",
                                         "APOBEC (2,13)",
@@ -29,8 +29,9 @@ color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer
                                         "Tobacco (4,29)",
                                         "UV light (7a–d,38)",
                                         "Prior treatment (11,31,32,35)",
-                                        "Mutagenic chemical exposure (22,24,42,88)", 
-                                        "Non-actionable or unknown signatures"
+                                        "Mutagenic chemical exposure (22,24,42,88)",
+                                        "Alcohol-associated (16)",
+                                        "Non-actionable and unknown signatures"
                                ))
 
 # switching two so UV light is the bright yellow
@@ -48,6 +49,25 @@ load("input_data/from_cluster/LUSC_population_scaled_selection.RData")
 load("input_data/from_cluster/JSD_combined.RData")
 load("input_data/from_cluster/weights_combined.RData")
 load("input_data/from_cluster/combined_substitution_data.RData")
+
+
+per_tumor_data_main <- per_tumor_data_main %>%
+  mutate(tumor_type = case_when(
+    tumor_type == "ESCA" ~ "ESCA and ESCC", 
+    TRUE ~ tumor_type))
+
+JSD_combined <- JSD_combined %>%
+  mutate(tumor_type = case_when(
+    tumor_type == "ESCA" ~ "ESCA and ESCC", 
+    TRUE ~ tumor_type))
+
+weights_combined <- weights_combined %>%
+  mutate(tumor_type = case_when(
+    tumor_type == "ESCA" ~ "ESCA and ESCC", 
+    TRUE ~ tumor_type))
+
+names(total_substitutions)[which(names(total_substitutions)=="ESCA")] <- "ESCA and ESCC"
+
 ```
 
 
@@ -160,7 +180,7 @@ sig_weights %>%
   group_by(name) %>%
   summarize(value = sum(value)) -> sig_weights_named
 
-color_vec_fullname_fig1 <- setNames(object = c(color_vec_fullname["Tobacco (4,29)"],color_vec_fullname["Unknown, clock-like (5)"],color_vec_fullname["Non-actionable or unknown signatures"]),nm = c("Tobacco smoking (4)","Unknown, clock-like (5)","Unknown (8)"))
+color_vec_fullname_fig1 <- setNames(object = c(color_vec_fullname["Tobacco (4,29)"],color_vec_fullname["Unknown, clock-like (5)"],color_vec_fullname["Non-actionable and unknown signatures"]),nm = c("Tobacco smoking (4)","Unknown, clock-like (5)","Unknown (8)"))
 
 # color_vec_fullname_8 <- c(color_vec_fullname, setNames(object = "black",nm = "Unknown (8)"))
 
@@ -435,7 +455,7 @@ prop_mut_source_effect_size <- ggplot(data = this_pop_scaled_effect_size, aes(x=
   scale_fill_manual(values = these_colors) + 
   theme_classic() + 
   theme(legend.position = "none") + 
-  labs(y="Proportional mutation source effect size")+
+  labs(y="Proportional mutation source effect size", x="Variant")+
   theme(axis.text.x = element_text(color=these_colors[levels(this_pop_scaled_effect_size$variant)]))
 
 prop_mut_source_effect_size
@@ -711,7 +731,8 @@ signatures_present_for_plot %>%
   )%>%
   mutate(Signature = 
            forcats::fct_recode(Signature,
-                               `Deamination with age, clock-like (1)` = "Deamination with age (1)")) -> signatures_present_for_plot
+                               `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) -> signatures_present_for_plot
 
 
 legend_for_plot <-  cowplot::get_legend( ggplot(signatures_present_for_plot, aes(fill=Signature)) + 
@@ -847,10 +868,15 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
     ) %>% 
     mutate(sig_collapsed = 
              forcats::fct_recode(sig_collapsed,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)")) %>% 
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) %>% 
     group_by(Tumor,data_type,bar_label_2,sig_collapsed) %>%
     summarize(Weight_prop = sum(Weight_prop)) -> these_data_nozero_forplot
   
+  
+  these_data_nozero_forplot <- these_data_nozero_forplot %>%
+    mutate(data_type = forcats::fct_recode(data_type, 
+                                           `Cancer effect weights` = "NRSI weights"))
   
   NRSI_v_weight_plot_ggplot <- 
     ggplot(data = these_data_nozero_forplot,
@@ -1319,6 +1345,7 @@ actionable_signatures <- c("SBS2",
                            "SBS4",
                            "SBS7a","SBS7b","SBS7c","SBS7d",
                            "SBS11","SBS22","SBS24",
+                           "SBS16",
                            "SBS29","SBS31","SBS32","SBS35","SBS38","SBS42")
 clocklike_signatures <- c("SBS1","SBS5")
 
@@ -1330,8 +1357,8 @@ action_weights <- as.data.frame(matrix(data = NA,nrow=length(unique(weights_comb
 
 action_effects <- as.data.frame(matrix(data = NA,nrow=length(unique(weights_combined_per_tumor_type$tumor_type)),
                                        ncol=length(actionable_signatures)+4),stringsAsFactors=F)
-colnames(action_weights) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures")
-colnames(action_effects) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures")
+colnames(action_weights) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Non-actionable and unknown signatures")
+colnames(action_effects) <- c("tumor_type",clocklike_signatures,actionable_signatures,"Non-actionable and unknown signatures")
 
 action_weights$tumor_type <- unique(weights_combined_per_tumor_type$tumor_type)
 action_effects$tumor_type <- unique(weights_combined_per_tumor_type$tumor_type)
@@ -1428,12 +1455,12 @@ signatures_names_matrix["SBS1","Etiology_sig"] <- "Deamination with age, clock-l
 
 
 action_weights_m$Signature <- factor(action_weights_m$Signature,
-                                     levels=c(clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures"),
-                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Non-actionable or unknown signatures"))
+                                     levels=c(clocklike_signatures,actionable_signatures,"Non-actionable and unknown signatures"),
+                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Non-actionable and unknown signatures"))
 
 action_effects_m$Signature <- factor(action_effects_m$Signature,
-                                     levels=c(clocklike_signatures,actionable_signatures,"Non-actionable or unknown signatures"),
-                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Non-actionable or unknown signatures"))
+                                     levels=c(clocklike_signatures,actionable_signatures,"Non-actionable and unknown signatures"),
+                                     labels = c(signatures_names_matrix[c(clocklike_signatures,actionable_signatures),"Etiology_sig"],"Non-actionable and unknown signatures"))
 
 
 action_weights_m$Signature <- 
@@ -1471,7 +1498,7 @@ actionable_weight_desc <- action_effects_m %>%
   group_by(tumor_type) %>%
   filter(! Signature %in%  c("Deamination with age, clock-like (1)",
                              "Unknown, clock-like (5)",
-                             "Non-actionable or unknown signatures")) %>% 
+                             "Non-actionable and unknown signatures")) %>% 
   summarize(sum_weight = sum(weight)) %>%
   arrange(sum_weight)
 
@@ -1572,6 +1599,10 @@ action_weights_m %>%
              
            )
   ) %>% 
+    mutate(Signature = 
+             forcats::fct_recode(Signature,
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) %>% 
   group_by(tumor_type,Signature) %>%
   summarize(weight = sum(weight)) -> action_weights_m_collapsed
 
@@ -1616,6 +1647,10 @@ action_effects_m %>%
              
            )
   ) %>% 
+    mutate(Signature = 
+             forcats::fct_recode(Signature,
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) %>% 
   group_by(tumor_type,Signature) %>%
   summarize(weight = sum(weight)) -> action_effects_m_collapsed
 
@@ -1706,8 +1741,19 @@ action_effects_m %>%
   filter(tumor_type == "LGG")
 
 action_effects_m %>% 
-  filter(Signature == "Non-actionable or unknown signatures") %>% 
+  filter(Signature == "Non-actionable and unknown signatures") %>% 
   arrange(desc(weight))
+
+weights_combined_per_tumor_type_unknown <- weights_combined_per_tumor_type[grep(pattern = "Unknown",x = weights_combined_per_tumor_type$Signature_long),]
+
+# top tumor types of unknown summed effect
+weights_combined_per_tumor_type_unknown %>%
+  filter(!Signature_long == "Unknown, clock-like (5)") %>%
+  filter(!Signature_long == "Unknown (16)") %>%
+  group_by(tumor_type) %>% 
+  summarize(total_unknown = sum(summed_weight_prop)) %>%
+  arrange(desc(total_unknown))
+  
 
 ```
 
@@ -1722,7 +1768,7 @@ combined_clocklike_w_dotplot <-
 
 
 
-cowplot::save_plot(filename = "output_data/figure_3_weight_effect.png",plot = combined_clocklike_w_dotplot,
+cowplot::save_plot(filename = "output_data/figure_4_weight_effect.png",plot = combined_clocklike_w_dotplot,
                    base_width = 9,base_height = 12)
 
 
@@ -1741,7 +1787,7 @@ combined_clocklike_w_dotplot
 all_weights_and_effects$Signature[
   !all_weights_and_effects$Signature %in% c(actionable_signatures,clocklike_signatures)
 ] <- 
-  "Non-actionable or unknown signatures"
+  "Non-actionable and unknown signatures"
 
 
 
@@ -1904,503 +1950,9 @@ write.table(x = removed_yg_tumors,file = "output_data/table_s1_removed_YG_tumors
 # Driver centric signature mutational effect size 
 
 
-```{r load in data for driver centric figures}
-# colors 
-# color_vec_fullname
-
-# load in data ---- 
-load("input_data/from_cluster/all_scaled_selection_main.RData")
-load("input_data/from_cluster/combined_selection_results.RData")
-
-# the following file is from this manuscript: 
-# Bailey, Matthew H., Collin Tokheim, Eduard Porta-Pardo, Sohini Sengupta, Denis Bertrand, Amila Weerasinghe, Antonio Colaprico, et al. 2018. “Comprehensive Characterization of Cancer Driver Genes and Mutations.” Cell 174 (4): 1034–35.
-
-# The file is located here: https://www.cell.com/cms/10.1016/j.cell.2018.02.060/attachment/b0abfafa-a1ff-4f7d-8842-b49ba8d32e08/mmc1.xlsx
-
-# I will not include the file in our repo as I am unsure if we have permission to 
-# share/host. But, it is open access!  
-bailey_driver_list <- readxl::read_excel(path = "dev/Bailey_etal_Cell_1-s2.0-S009286741830237X-mmc1.xlsx",sheet = "Table S1",skip = 3)
-
-
-load("input_data/from_cluster/weights_combined.RData")
-load("dev/variant_prevalence_main.RData")
-
-
-# setting up data ---- 
-
-# scaled selection
-all_scaled_selection_main_m <- pivot_longer(data = all_scaled_selection_main, 
-                                            cols = starts_with("SBS"))
-
-all_scaled_selection_main_m <- all_scaled_selection_main_m %>%
-  filter(value>0) %>%
-  separate(col = name, into = c("Signature","Type"),sep = "_")
-
-all_scaled_selection_main_m <- all_scaled_selection_main_m %>%
-  mutate(variant = stringr::str_replace(string = variant, pattern = "_ENSP[:digit:]+",replacement = ""))
-
-
-# weights
-
-
-sum(weights_combined$Weight_prop[weights_combined$Tumor=="TCGA-2F-A9KO"])
-
-avg_weights <- weights_combined %>%
-  group_by(tumor_type,Signature) %>%
-  summarize(avg_weight = mean(Weight_prop))
-
-signatures_names_matrix <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
-
-avg_weights_filtered <- avg_weights %>%
-  filter(avg_weight >0)
-
-avg_weights_filtered$Signature <- factor(avg_weights_filtered$Signature,levels = signatures_names_matrix$meta$Signature[
-  signatures_names_matrix$meta$Signature %in% avg_weights_filtered$Signature])
-
-avg_weights_filtered$Sig_num <- gsub(pattern = "SBS",replacement = "",as.character(avg_weights_filtered$Signature))
-
-
-
-# variant specific nrsi---- 
-scaled_selection <- all_scaled_selection_main_m %>%
-  filter(Type == "nrsi")
-
-
-scaled_selection <- scaled_selection %>%
-  mutate(variant_original = variant) %>%
-  separate(variant,into = c("Gene","AA_change"),sep = "_")
-
-scaled_selection <- scaled_selection %>%
-  filter(!is.na(value))
-
-
-scaled_selection <- scaled_selection %>%
-  group_by(Unique_Patient_Identifier) %>% 
-  mutate(nrsi_per_tumor = value/sum(value))
-
-
+```{r driver_centric_figure}
+source("dev/driver_plots.R")
 ```
-
-
-
-
-
-```{r function to generate figures}
-
-
-signatures_names_matrix <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
-signatures_names_matrix <- as.data.frame(signatures_names_matrix$meta[,c("Signature","Etiology")])
-
-signatures_names_matrix$Etiology_sig <- paste0(signatures_names_matrix$Etiology, " (",gsub(pattern = "SBS",replacement = "",x = signatures_names_matrix$Signature),")")
-
-rownames(signatures_names_matrix) <- signatures_names_matrix$Signature
-
-
-signatures_names_matrix$sig_num <- gsub(pattern = "SBS",replacement = "",x = signatures_names_matrix$Signature)
-
-# function to plot driver focused nrsi---- 
-driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
-                                               Bailey_tumor_type,
-                                               signatures_below_line,
-                                               signatures_below_line_grouped,
-                                               drivers_to_plot=10,
-                                               ordered_by_total_weight=F,
-                                               text_font_size=10,
-                                               legend_columns = 2,
-                                               below_line_black=F,
-                                               choose_variants_by_total_volume=F){
-  
-  scaled_selection %>%
-    filter(tumor_type == tumor_type_ourdata) %>%
-    filter(Gene %in% bailey_driver_list$Gene[bailey_driver_list$Cancer==Bailey_tumor_type]) %>%
-    # filter(variant_original == "BRAF_V600E") %>%
-    mutate(Signature = forcats::as_factor(Signature)) %>%
-    # mutate(sig_collapsed = forcats::fct_collapse(Signature, 
-    #                                              SBS7_all = c("SBS7a","SBS7b","SBS7c","SBS7d"))) %>% 
-    # mutate(sig_collapsed = forcats::fct_collapse(sig_collapsed, 
-    #                                              `SBS2,13` = c("SBS2","SBS13"))) %>% 
-    # tidyr::complete(sig_collapsed, fill = list(nrsi_per_tumor = 0)) %>%
-    group_by(Unique_Patient_Identifier,variant_original,Signature) %>%
-    summarize(nrsi_per_tumor = sum(nrsi_per_tumor)) %>%
-    ungroup() %>%
-    group_by(variant_original,Signature) %>%
-    summarize(summed_sig_nrsi = sum(nrsi_per_tumor)) %>%
-    ungroup() -> driver_signature_nrsi_weight
-  
-  
-  if(choose_variants_by_total_volume){
-    
-    drivers_to_pick <- driver_signature_nrsi_weight %>%
-      group_by(variant_original) %>%
-      summarize(total_volume = sum(summed_sig_nrsi)) %>%
-      arrange(desc(total_volume)) %>%
-      pull(variant_original) %>%
-      .[1:drivers_to_plot]
-    
-  }else{
-    drivers_to_pick <- driver_signature_nrsi_weight$variant_original
-  }
-  
-  if(ordered_by_total_weight){
-    order_of_drivers <- driver_signature_nrsi_weight %>%
-      filter(variant_original %in% drivers_to_pick) %>%
-      group_by(variant_original) %>%
-      summarize(summed_sigs = sum(summed_sig_nrsi)) %>%
-      arrange(desc(summed_sigs)) %>%
-      pull(variant_original) %>%
-      .[!is.na(.)] %>%
-      .[1:drivers_to_plot]
-  }else{
-    order_of_drivers <- driver_signature_nrsi_weight %>%
-      filter(variant_original %in% drivers_to_pick) %>%
-      filter(!Signature %in% signatures_below_line) %>%
-      group_by(variant_original) %>%
-      summarize(summed_sigs = sum(summed_sig_nrsi)) %>%
-      arrange(desc(summed_sigs)) %>%
-      pull(variant_original) %>%
-      .[!is.na(.)] %>%
-      .[1:drivers_to_plot]
-  }
-  
-  
-  
-  driver_signature_nrsi_weight %>%
-    mutate(signature_full = signatures_names_matrix[as.character(Signature), "Etiology_sig"]) %>%
-    mutate(signature_full = 
-             forcats::fct_collapse(
-               signature_full,
-               `UV light (7a–d,38)` = c("UV light (7a)",
-                                        "UV light (7b)",
-                                        "UV light (7c)",
-                                        "UV light (7d)",
-                                        "Potentially indirect damage from UV light (38)"),
-               `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
-               `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
-               `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
-                                                   "Platinum drug chemotherapy (31)",
-                                                   "Azathioprine treatment (used for immunosuppression) (32)",
-                                                   "Prior chemotherapy treatment (35)"),
-               `Mutagenic chemical exposure (22,24,42,88)` = c("Aristolochic acid exposure (22)",
-                                                               "Aflatoxin exposure (24)",
-                                                               "Occupational exposure to haloalkanes (42)",
-                                                               "Colibactin exposure (COSMIC 3.1) (88)")
-               
-             )
-    ) %>%
-    mutate(signature_full = 
-             forcats::fct_recode(signature_full,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)"))  %>% 
-    # mutate(signature_full = case_when(
-    #   as.character(signature_full) %in% names(color_vec_fullname) ~ signature_full, 
-    #   TRUE ~ "Non-actionable or unknown signatures")) %>%
-    group_by(variant_original,signature_full) %>%
-    summarize(summed_sig_nrsi = sum(summed_sig_nrsi)) %>%
-    ungroup() -> 
-    driver_signature_nrsi_weight_full_sig
-  
-  
-  unique(driver_signature_nrsi_weight_full_sig$signature_full)
-  
-  driver_signature_nrsi_weight_forplot <- driver_signature_nrsi_weight_full_sig %>%
-    filter(variant_original %in% order_of_drivers) %>%
-    mutate(variant_original = factor(variant_original,levels=order_of_drivers)) %>%
-    mutate(summed_sig_nrsi = case_when(signature_full %in% signatures_below_line_grouped ~ -summed_sig_nrsi, 
-                                       TRUE ~ summed_sig_nrsi)) 
-  
-  # %>%
-  #   mutate(Signature = gsub(pattern = "SBS",replacement = "",x = Signature)) %>%
-  #   mutate(Signature = stringr::str_replace(string = Signature,pattern = "[:alpha:]",replacement = ""))
-  # 
-  # sigs_below_line_num <- gsub(pattern = "SBS",replacement = "",x = signatures_below_line)
-  # sigs_below_line_num <- stringr::str_replace(string = sigs_below_line_num,pattern = "[:alpha:]",replacement = "")
-  # sigs_below_line_num <- as.numeric(sigs_below_line_num)
-  # 
-  # 
-  # 
-  
-  # 
-  # if(below_line_black){
-  #   
-  #   sigs_here <- unique(as.numeric(driver_signature_nrsi_weight_forplot$Signature))
-  #   sigs_here <- sort(sigs_here)
-  #   sigs_here <- c(sigs_here[!sigs_here %in% sigs_below_line_num],sigs_below_line_num)
-  #   
-  #   sig_levels <- unique(as.character(sigs_here))
-  #   color_code <- set_names(
-  #     x = c(gg_color_hue(n = (length(sig_levels)-length(unique(sigs_below_line_num)))),rep(x = "black",length(unique((sigs_below_line_num))))),
-  #     nm = sig_levels 
-  #   )
-  # }else{
-  #   
-  #   sigs_here <- unique(as.numeric(driver_signature_nrsi_weight_forplot$Signature))
-  #   sigs_here <- sort(sigs_here)
-  #   
-  #   sig_levels <- unique(as.character(sigs_here))
-  #   
-  #   color_code <- set_names(
-  #     x = gg_color_hue(n = length(sig_levels)),
-  #     nm = sig_levels 
-  #   ) 
-  # }
-  # 
-  # driver_signature_nrsi_weight_forplot$Signature <-
-  #   factor(driver_signature_nrsi_weight_forplot$Signature,levels = sig_levels)
-  
-  driver_signature_nrsi_weight_forplot$signature_full <- forcats::fct_relevel(
-    driver_signature_nrsi_weight_forplot$signature_full,
-    names(color_vec_fullname))
-  
-  # y_axis_values <- pretty(driver_signature_nrsi_weight_forplot$summed_sig_nrsi)
-  
-  
-  driver_signature_nrsi_weight_forplot %>%
-    mutate(sig_char = as.character(signature_full)) %>%
-    mutate(sig_char = case_when(
-      sig_char %in% names(color_vec_fullname) ~ sig_char, 
-      TRUE ~ "Non-actionable or unknown signatures")) %>%
-    mutate(sig_char = forcats::fct_relevel(sig_char, 
-                                           names(color_vec_fullname))) ->
-    driver_signature_nrsi_weight_forplot
-  
-  
-  plot_range <- max(abs(driver_signature_nrsi_weight_forplot$summed_sig_nrsi))
-  
-  y_axis_values <- pretty(c(-1*plot_range,plot_range))
-  
-  
-  driver_signature_nrsi_weight_forplot$variant_original <- 
-    driver_signature_nrsi_weight_forplot$variant_original %>%
-    fct_relabel(~ gsub(pattern = "_",replacement = " ", .x))
-  
-  
-  driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) + 
-    geom_bar(aes(x=variant_original,y = summed_sig_nrsi,fill=sig_char),stat="identity") + 
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() + 
-    geom_hline(yintercept = 0) + 
-    scale_y_continuous(breaks = y_axis_values,
-                       labels = abs(y_axis_values),
-                       limits = c(-1*plot_range,plot_range))+
-    theme(axis.text.x = element_text(angle=35,vjust=1,hjust=1)) + 
-    labs(title=
-           paste(tumor_type_ourdata),
-         y="Summed per-tumor relative variant effect size\ncontributed from each signature weight",
-         x="Variant",
-         fill = "Signature") + 
-    theme(text = element_text(size=text_font_size)) + 
-    guides(fill=guide_legend(ncol=legend_columns))
-  
-  
-  # flipped 
-  
-  driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) + 
-    geom_bar(aes(y=fct_rev(variant_original),x = summed_sig_nrsi,fill=sig_char),stat="identity") + 
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() + 
-    geom_vline(xintercept = 0) + 
-    scale_x_continuous(breaks = y_axis_values,
-                       labels = abs(y_axis_values),
-                       limits = c(-1*plot_range,plot_range))+
-    theme(axis.text.y = element_text(angle=0,vjust=0.5,hjust=1)) + 
-    # scale_y_discrete(position = "right") +
-    labs(
-      title=paste(tumor_type_ourdata),
-         x="Summed per-tumor relative variant effect size\ncontributed from each signature weight",
-         y="Variant",
-         fill = "Signature") + 
-    theme(text = element_text(size=text_font_size)) + 
-    guides(fill=guide_legend(ncol=legend_columns)) + 
-    theme(axis.title.y.left = element_text())
-  
-  
-  # driver_plot_out + theme(legend.position = "none")
-  
-  # avg weight plot ---- 
-  
-  
-  avg_weights %>% 
-    ungroup() %>%
-    filter(tumor_type == tumor_type_ourdata) %>%
-    mutate(sig_full = signatures_names_matrix[as.character(Signature),"Etiology_sig"]) %>%
-    mutate(sig_full_fct = 
-             forcats::fct_collapse(sig_full, 
-                                   `UV light (7a–d,38)` = c("UV light (7a)",
-                                                            "UV light (7b)",
-                                                            "UV light (7c)",
-                                                            "UV light (7d)",
-                                                            "Potentially indirect damage from UV light (38)"),
-                                   `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
-                                   `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
-                                   `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
-                                                                       "Platinum drug chemotherapy (31)",
-                                                                       "Azathioprine treatment (used for immunosuppression) (32)",
-                                                                       "Prior chemotherapy treatment (35)"),
-                                   `Mutagenic chemical exposure (22,24,42,88)` = c("Aristolochic acid exposure (22)",
-                                                                                   "Aflatoxin exposure (24)",
-                                                                                   "Occupational exposure to haloalkanes (42)",
-                                                                                   "Colibactin exposure (COSMIC 3.1) (88)")
-                                   
-             )
-    ) %>%
-    mutate(sig_full_fct = 
-             forcats::fct_recode(sig_full_fct,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)")) %>%
-    group_by(tumor_type,sig_full_fct) %>%
-    summarize(avg_weight = sum(avg_weight)) -> 
-    avg_weights_sig_full
-  
-  
-  avg_weights_sig_full <- avg_weights_sig_full %>%
-    mutate(avg_weight = case_when(sig_full_fct %in% signatures_below_line_grouped ~ -avg_weight, 
-                                  TRUE ~ avg_weight)) 
-  
-  
-  avg_weights_sig_full %>%
-    mutate(sig_char = as.character(sig_full_fct)) %>%
-    mutate(sig_char = case_when(
-      sig_char %in% names(color_vec_fullname) ~ sig_char, 
-      TRUE ~ "Non-actionable or unknown signatures")) %>%
-    mutate(sig_char = forcats::fct_relevel(sig_char, 
-                                           names(color_vec_fullname))) ->
-    avg_weights_sig_full_forplot
-  
-  
-  avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) + 
-    geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") + 
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() + 
-    geom_hline(yintercept = 0) + 
-    scale_y_continuous(limits=c(-1,1)
-                       # breaks = y_axis_values,
-                       # labels = abs(y_axis_values)
-    )+
-    theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) + 
-    labs(title=
-           paste(tumor_type_ourdata),
-         x="Average signature weight",
-         # x="Variant",
-         fill = "Signature") + 
-    theme(text = element_text(size=text_font_size),
-          axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) + 
-    guides(fill=guide_legend(ncol=legend_columns)) + 
-    theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank()) 
-  
-  
-  
-  
-  avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) + 
-    geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") + 
-    coord_flip() + 
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() + 
-    geom_hline(yintercept = 0) + 
-    scale_y_continuous(limits=c(-1,1)
-                       # breaks = y_axis_values,
-                       # labels = abs(y_axis_values)
-    )+
-    theme(axis.text.x = element_text(angle=0,hjust=0.5,vjust=1)) + 
-    labs(title=
-           paste(tumor_type_ourdata),
-         y="Average signature weight",
-         # x="Variant",
-         fill = "Signature") + 
-    theme(text = element_text(size=text_font_size),
-          axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.y = element_blank()) + 
-    guides(fill=guide_legend(ncol=legend_columns)) + 
-    theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank()) 
-  
-  
-  
-  return(list(effect_plot = driver_plot_out + theme(legend.position = "none"),
-              avg_weight_plot = avg_weight_plot_out+ theme(legend.position = "none")))
-  
-}
-
-
-library(cowplot)
-```
-
-
-
-## Driver-centric figures 
-
-
-```{r BLCA}
-
-blca_output <- driver_focused_nrsi_weight_barplot(tumor_type_ourdata = "BLCA",
-                                                  Bailey_tumor_type = "BLCA",
-                                                  signatures_below_line = c("SBS2","SBS13"),
-                                                  signatures_below_line_grouped = "APOBEC (2,13)",
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,
-                                                  choose_variants_by_total_volume = T)
-
-plot_grid(blca_output$avg_weight_plot + labs(title=NULL), blca_output$effect_plot,nrow = 1,rel_widths = c(1.1,5),align = "h")
-
-plot_grid(blca_output$avg_weight_plot , blca_output$effect_plot + labs(title=NULL),nrow = 2,rel_heights =  c(1.4,5),align = "v")
-
-
-ggsave(filename = "dev/BLCA_driver_focus_total_volume_sort.png",height = 4,width = 5)
-```
-
-```{r LUAD}
-
-luad_output <- driver_focused_nrsi_weight_barplot(tumor_type_ourdata = "LUAD",
-                                                  Bailey_tumor_type = "LUAD",
-                                                  signatures_below_line = c("SBS4"),
-                                                  signatures_below_line_grouped = c("Tobacco (4,29)"),
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,choose_variants_by_total_volume = T)
-
-plot_grid(luad_output$avg_weight_plot + labs(title=NULL), luad_output$effect_plot,nrow = 1,rel_widths = c(1,5),align = "h")
-
-ggsave(filename = "dev/LUAD_driver_focus_total_volume_sort.png",height = 3.5,width = 5)
-```
-
-
-
-```{r LUSC}
-
-lusc_output <- driver_focused_nrsi_weight_barplot(tumor_type_ourdata = "LUSC",
-                                                  Bailey_tumor_type = "LUSC",
-                                                  signatures_below_line = c("SBS4"),
-                                                  signatures_below_line_grouped = c("Tobacco (4,29)"),
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,
-                                                  choose_variants_by_total_volume = T)
-
-plot_grid(lusc_output$avg_weight_plot + labs(title=NULL), lusc_output$effect_plot,nrow = 1,rel_widths = c(1,5),align = "h")
-
-
-ggsave(filename = "dev/LUSC_driver_focus_total_volume_sort.png",height = 4,width = 5)
-
-
-```
-
-
-
-```{r}
-
-skcm_output <- driver_focused_nrsi_weight_barplot(tumor_type_ourdata = "SKCM_primary",
-                                                  Bailey_tumor_type = "SKCM",
-                                                  signatures_below_line = c("SBS7a","SBS7b","SBS7c","SBS7d"),
-                                                  signatures_below_line_grouped = "UV light (7a–d,38)",
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,choose_variants_by_total_volume = T)
-
-library(cowplot)
-plot_grid(skcm_output$avg_weight_plot + labs(title=NULL), skcm_output$effect_plot,nrow = 1,rel_widths = c(1,5),align = "h")
-
-
-
-
-ggsave(filename = "dev/SKCMp_driver_focus_total_volume_sort.png",height = 4,width = 5)
-```
-
 
 
 
