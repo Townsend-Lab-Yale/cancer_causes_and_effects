@@ -26,6 +26,7 @@ load("input_data/from_cluster/weights_combined.RData")
 load("dev/variant_prevalence_main.RData")
 
 
+
 # setting up data ----
 
 # scaled selection
@@ -113,7 +114,7 @@ variant_name_extracter <- function(variant_names_vec){
   return(variant_names)
 }
 
-color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer.pal(n = 6,name = "Set3"),"black")
+color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer.pal(n = 7,name = "Set3"),"black")
                                , nm = c("Deamination with age, clock-like (1)",
                                         "Unknown, clock-like (5)",
                                         "APOBEC (2,13)",
@@ -122,6 +123,7 @@ color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer
                                         "UV light (7a–d,38)",
                                         "Prior treatment (11,31,32,35)",
                                         "Mutagenic chemical exposure (22,24,42,88)",
+                                        "Alcohol-associated (16)",
                                         "Non-actionable or unknown signatures"
                                ))
 
@@ -146,7 +148,7 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
                                                below_line_black=F,
                                                choose_variants_by_total_volume=F,
                                                plot_title=NULL){
-
+  
   scaled_selection %>%
     filter(tumor_type == tumor_type_ourdata) %>%
     filter(Gene %in% bailey_driver_list$Gene[bailey_driver_list$Cancer==Bailey_tumor_type]) %>%
@@ -163,21 +165,21 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
     group_by(variant_original,Signature) %>%
     summarize(summed_sig_nrsi = sum(nrsi_per_tumor)) %>%
     ungroup() -> driver_signature_nrsi_weight
-
-
+  
+  
   if(choose_variants_by_total_volume){
-
+    
     drivers_to_pick <- driver_signature_nrsi_weight %>%
       group_by(variant_original) %>%
       summarize(total_volume = sum(summed_sig_nrsi)) %>%
       arrange(desc(total_volume)) %>%
       pull(variant_original) %>%
       .[1:drivers_to_plot]
-
+    
   }else{
     drivers_to_pick <- driver_signature_nrsi_weight$variant_original
   }
-
+  
   if(ordered_by_total_weight){
     order_of_drivers <- driver_signature_nrsi_weight %>%
       filter(variant_original %in% drivers_to_pick) %>%
@@ -198,9 +200,9 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
       .[!is.na(.)] %>%
       .[1:drivers_to_plot]
   }
-
-
-
+  
+  
+  
   driver_signature_nrsi_weight %>%
     mutate(signature_full = signatures_names_matrix[as.character(Signature), "Etiology_sig"]) %>%
     mutate(signature_full =
@@ -221,15 +223,16 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
                                                                "Aflatoxin exposure (24)",
                                                                "Occupational exposure to haloalkanes (42)",
                                                                "Colibactin exposure (COSMIC 3.1) (88)")
-
+               
              )
     ) %>%
     mutate(signature_full =
              forcats::fct_recode(signature_full,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)")) ->
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) ->
     driver_signature_nrsi_weight
-
-
+  
+  
   driver_signature_nrsi_weight %>%
     left_join(
       filter(
@@ -237,37 +240,37 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
         tumor_type == tumor_type_ourdata),
       by = c("variant_original" = "variant_name")) ->
     driver_signature_nrsi_weight
-
-
-
-
-
-    # mutate(signature_full = case_when(
-    #   as.character(signature_full) %in% names(color_vec_fullname) ~ signature_full,
-    #   TRUE ~ "Non-actionable or unknown signatures")) %>%
+  
+  
+  
+  
+  
+  # mutate(signature_full = case_when(
+  #   as.character(signature_full) %in% names(color_vec_fullname) ~ signature_full,
+  #   TRUE ~ "Non-actionable or unknown signatures")) %>%
   driver_signature_nrsi_weight %>%
     group_by(variant_original,signature_full) %>%
     summarize(avg_sig_nrsi = sum(nrsi_per_tumor)/samples_covering) %>%
     ungroup() ->
     driver_signature_nrsi_weight_full_sig
-
-
+  
+  
   unique(driver_signature_nrsi_weight_full_sig$signature_full)
-
+  
   driver_signature_nrsi_weight_forplot <- driver_signature_nrsi_weight_full_sig %>%
     filter(variant_original %in% order_of_drivers) %>%
     mutate(variant_original = factor(variant_original,levels=order_of_drivers)) %>%
     mutate(avg_sig_nrsi = case_when(signature_full %in% signatures_below_line_grouped ~ -avg_sig_nrsi,
-                                       TRUE ~ avg_sig_nrsi))
-
-
+                                    TRUE ~ avg_sig_nrsi))
+  
+  
   driver_signature_nrsi_weight_forplot$signature_full <- forcats::fct_relevel(
     driver_signature_nrsi_weight_forplot$signature_full,
     names(color_vec_fullname))
-
+  
   # y_axis_values <- pretty(driver_signature_nrsi_weight_forplot$summed_sig_nrsi)
-
-
+  
+  
   driver_signature_nrsi_weight_forplot %>%
     mutate(sig_char = as.character(signature_full)) %>%
     mutate(sig_char = case_when(
@@ -276,26 +279,26 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
     mutate(sig_char = forcats::fct_relevel(sig_char,
                                            names(color_vec_fullname))) ->
     driver_signature_nrsi_weight_forplot
-
-
+  
+  
   nrsi_summed <- driver_signature_nrsi_weight_forplot %>%
     mutate(collapsed_sig = case_when(
       sig_char == signatures_below_line_grouped ~ "below" ,
       TRUE ~ "above")) %>%
     group_by(variant_original,collapsed_sig) %>%
     summarize(main_bar = sum(abs(avg_sig_nrsi)))
-
-
+  
+  
   plot_range <- max(nrsi_summed$main_bar)
-
+  
   y_axis_values <- pretty(c(-1*plot_range,plot_range))
-
-
+  
+  
   driver_signature_nrsi_weight_forplot$variant_original <-
     driver_signature_nrsi_weight_forplot$variant_original %>%
     fct_relabel(~ gsub(pattern = "_",replacement = " ", .x))
-
-
+  
+  
   driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) +
     geom_bar(aes(x=variant_original,y = avg_sig_nrsi,fill=sig_char),stat="identity") +
     scale_fill_manual(values = color_vec_fullname, na.value="black") +
@@ -312,10 +315,10 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
          fill = "Signature") +
     theme(text = element_text(size=text_font_size)) +
     guides(fill=guide_legend(ncol=legend_columns))
-
-
+  
+  
   # flipped
-
+  
   driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) +
     geom_bar(aes(y=fct_rev(variant_original),x = avg_sig_nrsi,fill=sig_char),stat="identity") +
     scale_fill_manual(values = color_vec_fullname, na.value="black") +
@@ -331,13 +334,13 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
       fill = "Signature") +
     theme(text = element_text(size=text_font_size)) +
     guides(fill=guide_legend(ncol=legend_columns))
-
-
+  
+  
   # driver_plot_out + theme(legend.position = "none")
-
+  
   # avg weight plot ----
-
-
+  
+  
   avg_weights %>%
     ungroup() %>%
     filter(tumor_type == tumor_type_ourdata) %>%
@@ -359,22 +362,23 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
                                                                                    "Aflatoxin exposure (24)",
                                                                                    "Occupational exposure to haloalkanes (42)",
                                                                                    "Colibactin exposure (COSMIC 3.1) (88)")
-
+                                   
              )
     ) %>%
     mutate(sig_full_fct =
              forcats::fct_recode(sig_full_fct,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)")) %>%
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) %>%
     group_by(tumor_type,sig_full_fct) %>%
     summarize(avg_weight = sum(avg_weight)) ->
     avg_weights_sig_full
-
-
+  
+  
   avg_weights_sig_full <- avg_weights_sig_full %>%
     mutate(avg_weight = case_when(sig_full_fct %in% signatures_below_line_grouped ~ -avg_weight,
                                   TRUE ~ avg_weight))
-
-
+  
+  
   avg_weights_sig_full %>%
     mutate(sig_char = as.character(sig_full_fct)) %>%
     mutate(sig_char = case_when(
@@ -383,8 +387,8 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
     mutate(sig_char = forcats::fct_relevel(sig_char,
                                            names(color_vec_fullname))) ->
     avg_weights_sig_full_forplot
-
-
+  
+  
   avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
     geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") +
     scale_fill_manual(values = color_vec_fullname, na.value="black") +
@@ -403,10 +407,10 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
           axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
     guides(fill=guide_legend(ncol=legend_columns)) +
     theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
-
-
-
-
+  
+  
+  
+  
   avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
     geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") +
     coord_flip() +
@@ -426,12 +430,12 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
           axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.y = element_blank()) +
     guides(fill=guide_legend(ncol=legend_columns)) +
     theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank())
-
-
-
+  
+  
+  
   return(list(effect_plot = driver_plot_out + theme(legend.position = "none"),
               avg_weight_plot = avg_weight_plot_out+ theme(legend.position = "none")))
-
+  
 }
 # 
 # 
@@ -443,16 +447,16 @@ driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
 
 # function to plot driver focused nrsi---- 
 driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
-                                               Bailey_tumor_type,
-                                               signatures_below_line,
-                                               signatures_below_line_grouped,
-                                               drivers_to_plot=10,
-                                               ordered_by_total_weight=F,
-                                               text_font_size=10,
-                                               legend_columns = 2,
-                                               below_line_black=F,
-                                               choose_variants_by_total_volume=F,
-                                               plot_title=NULL){
+                                                   Bailey_tumor_type,
+                                                   signatures_below_line,
+                                                   signatures_below_line_grouped,
+                                                   drivers_to_plot=10,
+                                                   ordered_by_total_weight=F,
+                                                   text_font_size=10,
+                                                   legend_columns = 2,
+                                                   below_line_black=F,
+                                                   choose_variants_by_total_volume=F,
+                                                   plot_title=NULL){
   
   scaled_selection %>%
     filter(tumor_type == tumor_type_ourdata) %>%
@@ -535,7 +539,8 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
     ) %>%
     mutate(signature_full =
              forcats::fct_recode(signature_full,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)")) ->
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) ->
     driver_signature_nrsi_weight
   
   
@@ -601,10 +606,10 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
   y_axis_values <- pretty(c(-1*plot_range,plot_range),n = 3)
   
   if(length(y_axis_values) > 3){
-   
+    
     # only want text immediately around 0
     y_axis_values <- y_axis_values[y_axis_values %in% c(sort(abs(y_axis_values))[1:3],
-                                       sort(abs(y_axis_values))[1:3]*-1)]
+                                                        sort(abs(y_axis_values))[1:3]*-1)]
     
   }
   
@@ -683,7 +688,8 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
     ) %>%
     mutate(sig_full_fct =
              forcats::fct_recode(sig_full_fct,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)")) %>%
+                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                                 `Alcohol-associated (16)` = "Unknown (16)")) %>%
     group_by(tumor_type,sig_full_fct) %>%
     summarize(avg_weight = sum(avg_weight)) ->
     avg_weights_sig_full
@@ -772,14 +778,14 @@ library(cowplot)
 
 # BLCA ---- 
 blca_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "BLCA",
-                                                  Bailey_tumor_type = "BLCA",
-                                                  signatures_below_line = c("SBS2","SBS13"),
-                                                  signatures_below_line_grouped = "APOBEC (2,13)",
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,
-                                                  choose_variants_by_total_volume = T, 
-                                                  plot_title = "BLCA")
+                                                      Bailey_tumor_type = "BLCA",
+                                                      signatures_below_line = c("SBS2","SBS13"),
+                                                      signatures_below_line_grouped = "APOBEC (2,13)",
+                                                      drivers_to_plot = 10,
+                                                      ordered_by_total_weight = F,
+                                                      text_font_size = 10,
+                                                      choose_variants_by_total_volume = T, 
+                                                      plot_title = "BLCA")
 
 plot_grid(blca_output$avg_weight_plot + labs(title=NULL), 
           blca_output$effect_plot + theme(text=element_text(size=10)),
@@ -800,13 +806,13 @@ ggsave(filename = "dev/BLCA_driver_focus_total_volume_sort.png",height = 4,width
 # ```{r LUAD}
 # 
 luad_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "LUAD",
-                                                  Bailey_tumor_type = "LUAD",
-                                                  signatures_below_line = c("SBS4"),
-                                                  signatures_below_line_grouped = c("Tobacco (4,29)"),
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,choose_variants_by_total_volume = T,
-                                                  plot_title = "LUAD")
+                                                      Bailey_tumor_type = "LUAD",
+                                                      signatures_below_line = c("SBS4"),
+                                                      signatures_below_line_grouped = c("Tobacco (4,29)"),
+                                                      drivers_to_plot = 10,
+                                                      ordered_by_total_weight = F,
+                                                      text_font_size = 10,choose_variants_by_total_volume = T,
+                                                      plot_title = "LUAD")
 # 
 # plot_grid(luad_output$avg_weight_plot + labs(title=NULL), luad_output$effect_plot,nrow = 1,rel_widths = c(1,5),align = "h")
 # 
@@ -828,14 +834,14 @@ ggsave(filename = "dev/LUAD_driver_focus_total_volume_sort.png",height = 3.5,wid
 # CESC ---- 
 
 cesc_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "CESC",
-                                                  Bailey_tumor_type = "CESC",
-                                                  signatures_below_line = c("SBS2","SBS13"),
-                                                  signatures_below_line_grouped = "APOBEC (2,13)",
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,
-                                                  choose_variants_by_total_volume = T, 
-                                                  plot_title = "CESC")
+                                                      Bailey_tumor_type = "CESC",
+                                                      signatures_below_line = c("SBS2","SBS13"),
+                                                      signatures_below_line_grouped = "APOBEC (2,13)",
+                                                      drivers_to_plot = 10,
+                                                      ordered_by_total_weight = F,
+                                                      text_font_size = 10,
+                                                      choose_variants_by_total_volume = T, 
+                                                      plot_title = "CESC")
 # 
 # plot_grid(luad_output$avg_weight_plot + labs(title=NULL), luad_output$effect_plot,nrow = 1,rel_widths = c(1,5),align = "h")
 # 
@@ -902,7 +908,7 @@ BLCA_CESC <- plot_grid(blca_output$avg_weight_plot +
                                axis.text=element_text(size=12)) + 
                          theme(plot.margin = unit(c(0, 5, 0, 0), "pt")),
                        nrow = 2, 
-                       align = "v",rel_heights = c(1,3),labels = c("A","B") )
+                       align = "v",rel_heights = c(1,3),labels = c("E","F") )
 
 
 ggsave(filename = "dev/BLCA_CESC.png",height = 4,width = 8,
@@ -915,52 +921,52 @@ ggsave(filename = "dev/BLCA_CESC.png",height = 4,width = 8,
 
 
 HNSC_pos_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "HNSC_HPVpos",
-                                                      Bailey_tumor_type = "HNSC",
-                                                      signatures_below_line = c("SBS2","SBS13"),
-                                                      signatures_below_line_grouped = "APOBEC (2,13)",
-                                                      drivers_to_plot = 10,
-                                                      ordered_by_total_weight = F,
-                                                      text_font_size = 10,
-                                                      choose_variants_by_total_volume = T, 
-                                                      plot_title = "HNSC HPV positive")
+                                                          Bailey_tumor_type = "HNSC",
+                                                          signatures_below_line = c("SBS2","SBS13"),
+                                                          signatures_below_line_grouped = "APOBEC (2,13)",
+                                                          drivers_to_plot = 10,
+                                                          ordered_by_total_weight = F,
+                                                          text_font_size = 10,
+                                                          choose_variants_by_total_volume = T, 
+                                                          plot_title = "HNSC HPV positive")
 
 
 
 HNSC_neg_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "HNSC_HPVneg",
-                                                      Bailey_tumor_type = "HNSC",
-                                                      signatures_below_line = c("SBS2","SBS13"),
-                                                      signatures_below_line_grouped = "APOBEC (2,13)",
-                                                      drivers_to_plot = 10,
-                                                      ordered_by_total_weight = F,
-                                                      text_font_size = 10,
-                                                      choose_variants_by_total_volume = T, 
-                                                      plot_title = "HNSC HPV negative")
+                                                          Bailey_tumor_type = "HNSC",
+                                                          signatures_below_line = c("SBS2","SBS13"),
+                                                          signatures_below_line_grouped = "APOBEC (2,13)",
+                                                          drivers_to_plot = 10,
+                                                          ordered_by_total_weight = F,
+                                                          text_font_size = 10,
+                                                          choose_variants_by_total_volume = T, 
+                                                          plot_title = "HNSC HPV negative")
 
 
 
 
-HNSC_combined <- plot_grid(HNSC_pos_output$avg_weight_plot + 
+HNSC_combined <- plot_grid(HNSC_neg_output$avg_weight_plot + 
                              theme(axis.title.x = element_blank(),
                                    axis.text=element_text(size=12)) + 
                              theme(plot.margin = unit(c(5, 5, 0, 0), "pt")), 
-                           HNSC_neg_output$avg_weight_plot + 
+                           HNSC_pos_output$avg_weight_plot + 
                              theme(axis.title.x = element_blank(),
                                    axis.text=element_text(size=12)) + 
                              theme(plot.margin = unit(c(5, 5, 0, 0), "pt")), 
-                           HNSC_pos_output$effect_plot + 
+                           HNSC_neg_output$effect_plot + 
                              theme(axis.title.x = element_blank(), 
                                    title = element_blank(),
                                    axis.title.y = element_blank(),
                                    axis.text = element_text(size=12))+
                              theme(plot.margin = unit(c(0, 5, 0, 0), "pt")), 
-                           HNSC_neg_output$effect_plot + 
+                           HNSC_pos_output$effect_plot + 
                              theme(axis.title.x = element_blank(),
                                    title = element_blank(),
                                    axis.title.y = element_blank(),
                                    axis.text=element_text(size=12)) + 
                              theme(plot.margin = unit(c(0, 5, 0, 0), "pt")),
                            nrow = 2, 
-                           align = "v",rel_heights = c(1,3), labels = c("E","F") )
+                           align = "v",rel_heights = c(1,3), labels = c("G","H") )
 
 
 ggsave(filename = "dev/HNSC_combined.png",height = 4,width = 8,
@@ -973,26 +979,26 @@ ggsave(filename = "dev/HNSC_combined.png",height = 4,width = 8,
 
 
 LUAD_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "LUAD",
-                                                  Bailey_tumor_type = "LUAD",
-                                                  signatures_below_line = c("SBS4","SBS29"),
-                                                  signatures_below_line_grouped = "Tobacco (4,29)",
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,
-                                                  choose_variants_by_total_volume = T, 
-                                                  plot_title = "LUAD")
+                                                      Bailey_tumor_type = "LUAD",
+                                                      signatures_below_line = c("SBS4","SBS29"),
+                                                      signatures_below_line_grouped = "Tobacco (4,29)",
+                                                      drivers_to_plot = 10,
+                                                      ordered_by_total_weight = F,
+                                                      text_font_size = 10,
+                                                      choose_variants_by_total_volume = T, 
+                                                      plot_title = "LUAD")
 
 
 
 LUSC_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "LUSC",
-                                                  Bailey_tumor_type = "LUSC",
-                                                  signatures_below_line = c("SBS4","SBS29"),
-                                                  signatures_below_line_grouped = "Tobacco (4,29)",
-                                                  drivers_to_plot = 10,
-                                                  ordered_by_total_weight = F,
-                                                  text_font_size = 10,
-                                                  choose_variants_by_total_volume = T, 
-                                                  plot_title = "LUSC")
+                                                      Bailey_tumor_type = "LUSC",
+                                                      signatures_below_line = c("SBS4","SBS29"),
+                                                      signatures_below_line_grouped = "Tobacco (4,29)",
+                                                      drivers_to_plot = 10,
+                                                      ordered_by_total_weight = F,
+                                                      text_font_size = 10,
+                                                      choose_variants_by_total_volume = T, 
+                                                      plot_title = "LUSC")
 
 
 
@@ -1018,7 +1024,7 @@ Lung_combined <- plot_grid(LUAD_output$avg_weight_plot +
                                    axis.text=element_text(size=12)) + 
                              theme(plot.margin = unit(c(0, 5, 0, 0), "pt")),
                            nrow = 2, 
-                           align = "v",rel_heights = c(1,3),labels = c("C","D") )
+                           align = "v",rel_heights = c(1,3),labels = c("A","B") )
 
 
 ggsave(filename = "dev/Lung_combined.png",height = 4,width = 8,
@@ -1034,34 +1040,34 @@ ggsave(filename = "dev/Lung_combined.png",height = 4,width = 8,
 
 
 SKCMp_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "SKCM_primary",
-                                                   Bailey_tumor_type = "SKCM",
-                                                   signatures_below_line = c("SBS7a",
-                                                                             "SBS7b",
-                                                                             "SBS7c",
-                                                                             "SBS7d",
-                                                                             "SBS38"),
-                                                   signatures_below_line_grouped = "UV light (7a–d,38)",
-                                                   drivers_to_plot = 10,
-                                                   ordered_by_total_weight = F,
-                                                   text_font_size = 10,
-                                                   choose_variants_by_total_volume = T, 
-                                                   plot_title = "SKCM (Primary)")
+                                                       Bailey_tumor_type = "SKCM",
+                                                       signatures_below_line = c("SBS7a",
+                                                                                 "SBS7b",
+                                                                                 "SBS7c",
+                                                                                 "SBS7d",
+                                                                                 "SBS38"),
+                                                       signatures_below_line_grouped = "UV light (7a–d,38)",
+                                                       drivers_to_plot = 10,
+                                                       ordered_by_total_weight = F,
+                                                       text_font_size = 10,
+                                                       choose_variants_by_total_volume = T, 
+                                                       plot_title = "SKCM (Primary)")
 
 
 
 SKCMm_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "SKCM_metastasis",
-                                                   Bailey_tumor_type = "SKCM",
-                                                   signatures_below_line = c("SBS7a",
-                                                                             "SBS7b",
-                                                                             "SBS7c",
-                                                                             "SBS7d",
-                                                                             "SBS38"),
-                                                   signatures_below_line_grouped = "UV light (7a–d,38)",
-                                                   drivers_to_plot = 10,
-                                                   ordered_by_total_weight = F,
-                                                   text_font_size = 10,
-                                                   choose_variants_by_total_volume = T, 
-                                                   plot_title = "SKCM (Metastases)")
+                                                       Bailey_tumor_type = "SKCM",
+                                                       signatures_below_line = c("SBS7a",
+                                                                                 "SBS7b",
+                                                                                 "SBS7c",
+                                                                                 "SBS7d",
+                                                                                 "SBS38"),
+                                                       signatures_below_line_grouped = "UV light (7a–d,38)",
+                                                       drivers_to_plot = 10,
+                                                       ordered_by_total_weight = F,
+                                                       text_font_size = 10,
+                                                       choose_variants_by_total_volume = T, 
+                                                       plot_title = "SKCM (Metastases)")
 
 
 
@@ -1100,14 +1106,14 @@ ggsave(filename = "dev/Skin_combined.png",height = 4,width = 8,
 # BRCA ---- 
 
 BRCA_ERp_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "BRCA_ER_pos",
-                                                       Bailey_tumor_type = "BRCA",
-                                                       signatures_below_line = c("SBS2","SBS13"),
-                                                       signatures_below_line_grouped = "APOBEC (2,13)",
-                                                       drivers_to_plot = 10,
-                                                       ordered_by_total_weight = F,
-                                                       text_font_size = 10,
-                                                       choose_variants_by_total_volume = T, 
-                                                       plot_title = "BRCA ER positive")
+                                                          Bailey_tumor_type = "BRCA",
+                                                          signatures_below_line = c("SBS2","SBS13"),
+                                                          signatures_below_line_grouped = "APOBEC (2,13)",
+                                                          drivers_to_plot = 10,
+                                                          ordered_by_total_weight = F,
+                                                          text_font_size = 10,
+                                                          choose_variants_by_total_volume = T, 
+                                                          plot_title = "BRCA ER positive")
 
 
 
@@ -1115,57 +1121,55 @@ BRCA_ERp_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "
 
 #  LIHC----
 LIHC_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "LIHC",
-                                                          Bailey_tumor_type = "LIHC",
-                                                          signatures_below_line = c("SBS22",
-                                                                                    "SBS24",
-                                                                                    "SBS42",
-                                                                                    "SBS88"),
-                                                          signatures_below_line_grouped = "Mutagenic chemical exposure (22,24,42,88)",
-                                                          drivers_to_plot = 10,
-                                                          ordered_by_total_weight = F,
-                                                          text_font_size = 10,
-                                                          choose_variants_by_total_volume = T, 
-                                                          plot_title = "LIHC")
+                                                      Bailey_tumor_type = "LIHC",
+                                                      signatures_below_line = c("SBS16"),
+                                                      signatures_below_line_grouped = "Alcohol-associated (16)",
+                                                      drivers_to_plot = 10,
+                                                      ordered_by_total_weight = F,
+                                                      text_font_size = 10,
+                                                      choose_variants_by_total_volume = T, 
+                                                      plot_title = "LIHC")
 
 
 # OV ---- 
 
 OV_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "OV",
-                                                      Bailey_tumor_type = "OV",
-                                                      signatures_below_line = c("SBS3"),
-                                                      signatures_below_line_grouped = "Defective homologous recombination (3)",
-                                                      drivers_to_plot = 10,
-                                                      ordered_by_total_weight = F,
-                                                      text_font_size = 10,
-                                                      choose_variants_by_total_volume = T, 
-                                                      plot_title = "OV")
+                                                    Bailey_tumor_type = "OV",
+                                                    signatures_below_line = c("SBS3"),
+                                                    signatures_below_line_grouped = "Defective homologous recombination (3)",
+                                                    drivers_to_plot = 10,
+                                                    ordered_by_total_weight = F,
+                                                    text_font_size = 10,
+                                                    choose_variants_by_total_volume = T, 
+                                                    plot_title = "OV")
 
 
 
 
 
-liver_skin_combined <- plot_grid(LIHC_output$avg_weight_plot + 
-                             theme(axis.title.x = element_blank(),
-                                   axis.text=element_text(size=12)) + 
-                             theme(plot.margin = unit(c(5, 5, 0, 0), "pt")), 
-                           SKCMp_output$avg_weight_plot + 
-                             theme(axis.title.x = element_blank(),
-                                   axis.text=element_text(size=12)) + 
-                             theme(plot.margin = unit(c(5, 5, 0, 0), "pt")), 
-                           LIHC_output$effect_plot + 
-                             theme(axis.title.x = element_blank(), 
-                                   title = element_blank(),
-                                   axis.title.y = element_blank(),
-                                   axis.text = element_text(size=12))+
-                             theme(plot.margin = unit(c(0, 5, 0, 0), "pt")), 
-                           SKCMp_output$effect_plot + 
-                             theme(axis.title.x = element_blank(),
-                                   title = element_blank(),
-                                   axis.title.y = element_blank(),
-                                   axis.text=element_text(size=12)) + 
-                             theme(plot.margin = unit(c(0, 5, 0, 0), "pt")),
-                           nrow = 2, 
-                           align = "v",rel_heights = c(1,3),labels = c("G","H") )
+skin_liver_combined <- plot_grid(SKCMp_output$avg_weight_plot + 
+                                   theme(axis.title.x = element_blank(),
+                                         axis.text=element_text(size=12)) + 
+                                   theme(plot.margin = unit(c(5, 5, 0, 0), "pt")), 
+                                 LIHC_output$avg_weight_plot + 
+                                   theme(axis.title.x = element_blank(),
+                                         axis.text=element_text(size=12)) + 
+                                   theme(plot.margin = unit(c(5, 5, 0, 0), "pt")), 
+                                 SKCMp_output$effect_plot + 
+                                   theme(axis.title.x = element_blank(), 
+                                         title = element_blank(),
+                                         axis.title.y = element_blank(),
+                                         axis.text = element_text(size=12))+
+                                   theme(plot.margin = unit(c(0, 5, 0, 0), "pt")), 
+                                 LIHC_output$effect_plot + 
+                                   theme(axis.title.x = element_blank(),
+                                         title = element_blank(),
+                                         axis.title.y = element_blank(),
+                                         axis.text=element_text(size=12)) + 
+                                   theme(plot.margin = unit(c(0, 5, 0, 0), "pt")),
+                                 nrow = 2, 
+                                 align = "v",rel_heights = c(1,3),labels = c("C","D") )
+
 
 
 
@@ -1173,7 +1177,7 @@ liver_skin_combined <- plot_grid(LIHC_output$avg_weight_plot +
 all_driver_figure <- plot_grid(BLCA_CESC,
                                HNSC_combined,
                                Lung_combined,
-                               liver_skin_combined,align = "v",ncol = 1)
+                               skin_liver_combined,align = "v",ncol = 1)
 
 
 
@@ -1208,10 +1212,11 @@ cowplot::save_plot(all_driver_figure_w_legend,filename = "dev/combined_driver_fi
 
 # all driver 2x2-----
 
-all_driver_figure_2x2 <- plot_grid(BLCA_CESC,
-                               Lung_combined,
-                               HNSC_combined,
-                               liver_skin_combined,align = "v",ncol = 2)
+all_driver_figure_2x2 <- plot_grid(
+  Lung_combined,
+  skin_liver_combined,
+  BLCA_CESC,
+  HNSC_combined,align = "v",ncol = 2)
 
 
 
@@ -1299,4 +1304,5 @@ all_driver_figure_w_legend_2x2 <- plot_grid(leg_legend,driver_fig_w_lab, ncol=1,
 
 
 cowplot::save_plot(all_driver_figure_w_legend_2x2,filename = "dev/combined_driver_figure_w_legend_2x2.png",base_height = 7.5,base_width = 13)
+
 
