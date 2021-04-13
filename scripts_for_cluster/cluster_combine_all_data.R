@@ -18,6 +18,7 @@ tumor_names <- unlist(strsplit(effect_size_files,split = "/"))[c(F,T,F)]
 
 
 selection_data_main <- NULL
+variant_prevalence_main <- NULL
 total_substitutions <- vector(mode = "list",length = length(tumor_names))
 names(total_substitutions) <- tumor_names
 
@@ -27,12 +28,28 @@ for(j in 1:length(effect_size_files)){
   load(effect_size_files[j])
   
   
-  maf <- analysis@maf[Variant_Type=="SNV"]
+  maf <- analysis@maf[variant_type=="snv"]
   total_substitutions[[j]] <- table(maf$Unique_Patient_Identifier)
   
+  if("total_maf_freq" %in% colnames(analysis$variants)){
+    variant_prevalence  <- as.data.frame(analysis$variants) %>%
+      mutate(maf_frequency = total_maf_freq) %>%
+      mutate(samples_covering = total_maf_freq) %>%
+      filter(maf_frequency > 1) %>%
+      select(variant_name,samples_covering,maf_frequency) %>%
+      mutate(tumor_type = tumor_names[j])
+  }else{
   
+  variant_prevalence <- analysis$variants %>%
+    filter(maf_frequency > 1) %>%
+    select(variant_name,samples_covering,maf_frequency) %>%
+    mutate(tumor_type = tumor_names[j])
   
-  selection_data <- as.data.frame(analysis@selection_results[tumors_with_variant > 1])
+  }
+  
+  variant_prevalence_main <- rbind(variant_prevalence_main, variant_prevalence)
+  
+  selection_data <- as.data.frame(analysis@selection_results$selection.1)
   
   
   selection_data$tumor_type <- tumor_names[j]
@@ -44,12 +61,14 @@ for(j in 1:length(effect_size_files)){
   
   # View(selection_data_df)
   print(tumor_names[j])
+  
 }
 
 save(selection_data_main,file = "combined_selection_results.RData")
 
 save(total_substitutions, file = "combined_substitution_data.RData")
 
+save(variant_prevalence_main, file = "variant_prevalence_main.RData")
 
 
 # combining JSD ---- 
@@ -93,9 +112,9 @@ tumor_names <- unlist(strsplit(per_tumor_data_files,split = "/"))[c(F,T,F)]
 per_tumor_data_main <- NULL
 recurrent_var_per_tumor_main <- NULL
 
+all_scaled_selection_main <- NULL
 
- 
-
+# library(plyr)
 
 
 for(j in 1:length(per_tumor_data_files)){
@@ -103,7 +122,9 @@ for(j in 1:length(per_tumor_data_files)){
   
   load(per_tumor_data_files[j])
   
-
+  all_scaled_selection_main <- plyr::rbind.fill(all_scaled_selection_main, 
+                         population_scaled_selection %>%
+                           mutate(tumor_type = tumor_names[j]))
   
   per_tumor_data <- population_scaled_selection %>%
     dplyr::select(variant,Unique_Patient_Identifier,ends_with("nrsi")) %>% # select nrsi values
@@ -111,10 +132,10 @@ for(j in 1:length(per_tumor_data_files)){
                  names_to = "Signature",values_to="NRSI") %>% # make long
     group_by(Unique_Patient_Identifier) %>% 
     mutate(NRSI_pct = NRSI / sum(NRSI))
-
+  
   per_tumor_data$tumor_type <- tumor_names[j]
- 
-
+  
+  
   
   per_tumor_data_main <- rbind(per_tumor_data_main,per_tumor_data)
   
@@ -123,7 +144,7 @@ for(j in 1:length(per_tumor_data_files)){
     group_by(Unique_Patient_Identifier) %>%
     summarize(count=n_distinct(variant))
   
-
+  
   recurrent_var_per_tumor$tumor_type <- tumor_names[j]
   
   recurrent_var_per_tumor_main <- rbind(recurrent_var_per_tumor_main,recurrent_var_per_tumor)
@@ -137,6 +158,6 @@ save(per_tumor_data_main,file = "combined_per_tumor_proportion_scaled_selection.
 
 save(recurrent_var_per_tumor_main,file = "recurrent_var_per_tumor.RData")
 
-
+save(all_scaled_selection_main, file="all_scaled_selection_main.RData")
 
 
