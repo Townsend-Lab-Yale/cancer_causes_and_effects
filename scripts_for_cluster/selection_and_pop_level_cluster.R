@@ -26,7 +26,8 @@ if(!("-ready_MAF" %in% rownames(inputs))){
     local_maf <- read.delim(file = inputs["-Local_MAF",],header = T,stringsAsFactors = F)
     
     local_maf <- dplyr::distinct(local_maf)
-    if("Patient_ID" %in% colnames(local_maf)){
+    if("Patient_ID" %in% colnames(local_maf) &
+       !("Tumor_Sample_Barcode" %in% colnames(local_maf))){
       colnames(local_maf)[which(colnames(local_maf) == "Patient_ID") ] <- "Tumor_Sample_Barcode"
     }
     

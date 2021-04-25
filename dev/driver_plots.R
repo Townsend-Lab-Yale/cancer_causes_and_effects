@@ -136,307 +136,307 @@ color_vec_fullname["Defective homologous recombination (3)"] <- "#FB8072"
 
 
 
-# function to plot driver focused nrsi---- 
-driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
-                                               Bailey_tumor_type,
-                                               signatures_below_line,
-                                               signatures_below_line_grouped,
-                                               drivers_to_plot=10,
-                                               ordered_by_total_weight=F,
-                                               text_font_size=10,
-                                               legend_columns = 2,
-                                               below_line_black=F,
-                                               choose_variants_by_total_volume=F,
-                                               plot_title=NULL){
-  
-  scaled_selection %>%
-    filter(tumor_type == tumor_type_ourdata) %>%
-    filter(Gene %in% bailey_driver_list$Gene[bailey_driver_list$Cancer==Bailey_tumor_type]) %>%
-    # filter(variant_original == "BRAF_V600E") %>%
-    mutate(Signature = forcats::as_factor(Signature)) %>%
-    # mutate(sig_collapsed = forcats::fct_collapse(Signature,
-    #                                              SBS7_all = c("SBS7a","SBS7b","SBS7c","SBS7d"))) %>%
-    # mutate(sig_collapsed = forcats::fct_collapse(sig_collapsed,
-    #                                              `SBS2,13` = c("SBS2","SBS13"))) %>%
-    # tidyr::complete(sig_collapsed, fill = list(nrsi_per_tumor = 0)) %>%
-    group_by(Unique_Patient_Identifier,variant_original,Signature) %>%
-    summarize(nrsi_per_tumor = sum(nrsi_per_tumor)) %>%
-    ungroup() %>%
-    group_by(variant_original,Signature) %>%
-    summarize(summed_sig_nrsi = sum(nrsi_per_tumor)) %>%
-    ungroup() -> driver_signature_nrsi_weight
-  
-  
-  if(choose_variants_by_total_volume){
-    
-    drivers_to_pick <- driver_signature_nrsi_weight %>%
-      group_by(variant_original) %>%
-      summarize(total_volume = sum(summed_sig_nrsi)) %>%
-      arrange(desc(total_volume)) %>%
-      pull(variant_original) %>%
-      .[1:drivers_to_plot]
-    
-  }else{
-    drivers_to_pick <- driver_signature_nrsi_weight$variant_original
-  }
-  
-  if(ordered_by_total_weight){
-    order_of_drivers <- driver_signature_nrsi_weight %>%
-      filter(variant_original %in% drivers_to_pick) %>%
-      group_by(variant_original) %>%
-      summarize(summed_sigs = sum(summed_sig_nrsi)) %>%
-      arrange(desc(summed_sigs)) %>%
-      pull(variant_original) %>%
-      .[!is.na(.)] %>%
-      .[1:drivers_to_plot]
-  }else{
-    order_of_drivers <- driver_signature_nrsi_weight %>%
-      filter(variant_original %in% drivers_to_pick) %>%
-      filter(!Signature %in% signatures_below_line) %>%
-      group_by(variant_original) %>%
-      summarize(summed_sigs = sum(summed_sig_nrsi)) %>%
-      arrange(desc(summed_sigs)) %>%
-      pull(variant_original) %>%
-      .[!is.na(.)] %>%
-      .[1:drivers_to_plot]
-  }
-  
-  
-  
-  driver_signature_nrsi_weight %>%
-    mutate(signature_full = signatures_names_matrix[as.character(Signature), "Etiology_sig"]) %>%
-    mutate(signature_full =
-             forcats::fct_collapse(
-               signature_full,
-               `UV light (7a–d,38)` = c("UV light (7a)",
-                                        "UV light (7b)",
-                                        "UV light (7c)",
-                                        "UV light (7d)",
-                                        "Potentially indirect damage from UV light (38)"),
-               `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
-               `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
-               `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
-                                                   "Platinum drug chemotherapy (31)",
-                                                   "Azathioprine treatment (used for immunosuppression) (32)",
-                                                   "Prior chemotherapy treatment (35)"),
-               `Mutagenic chemical exposure (22,24,42,88)` = c("Aristolochic acid exposure (22)",
-                                                               "Aflatoxin exposure (24)",
-                                                               "Occupational exposure to haloalkanes (42)",
-                                                               "Colibactin exposure (COSMIC 3.1) (88)")
-               
-             )
-    ) %>%
-    mutate(signature_full =
-             forcats::fct_recode(signature_full,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
-                                 `Alcohol-associated (16)` = "Unknown (16)")) ->
-    driver_signature_nrsi_weight
-  
-  
-  driver_signature_nrsi_weight %>%
-    left_join(
-      filter(
-        variant_prevalence_main,
-        tumor_type == tumor_type_ourdata),
-      by = c("variant_original" = "variant_name")) ->
-    driver_signature_nrsi_weight
-  
-  
-  
-  
-  
-  # mutate(signature_full = case_when(
-  #   as.character(signature_full) %in% names(color_vec_fullname) ~ signature_full,
-  #   TRUE ~ "Non-actionable or unknown signatures")) %>%
-  driver_signature_nrsi_weight %>%
-    group_by(variant_original,signature_full) %>%
-    summarize(avg_sig_nrsi = sum(nrsi_per_tumor)/samples_covering) %>%
-    ungroup() ->
-    driver_signature_nrsi_weight_full_sig
-  
-  
-  unique(driver_signature_nrsi_weight_full_sig$signature_full)
-  
-  driver_signature_nrsi_weight_forplot <- driver_signature_nrsi_weight_full_sig %>%
-    filter(variant_original %in% order_of_drivers) %>%
-    mutate(variant_original = factor(variant_original,levels=order_of_drivers)) %>%
-    mutate(avg_sig_nrsi = case_when(signature_full %in% signatures_below_line_grouped ~ -avg_sig_nrsi,
-                                    TRUE ~ avg_sig_nrsi))
-  
-  
-  driver_signature_nrsi_weight_forplot$signature_full <- forcats::fct_relevel(
-    driver_signature_nrsi_weight_forplot$signature_full,
-    names(color_vec_fullname))
-  
-  # y_axis_values <- pretty(driver_signature_nrsi_weight_forplot$summed_sig_nrsi)
-  
-  
-  driver_signature_nrsi_weight_forplot %>%
-    mutate(sig_char = as.character(signature_full)) %>%
-    mutate(sig_char = case_when(
-      sig_char %in% names(color_vec_fullname) ~ sig_char,
-      TRUE ~ "Non-actionable or unknown signatures")) %>%
-    mutate(sig_char = forcats::fct_relevel(sig_char,
-                                           names(color_vec_fullname))) ->
-    driver_signature_nrsi_weight_forplot
-  
-  
-  nrsi_summed <- driver_signature_nrsi_weight_forplot %>%
-    mutate(collapsed_sig = case_when(
-      sig_char == signatures_below_line_grouped ~ "below" ,
-      TRUE ~ "above")) %>%
-    group_by(variant_original,collapsed_sig) %>%
-    summarize(main_bar = sum(abs(avg_sig_nrsi)))
-  
-  
-  plot_range <- max(nrsi_summed$main_bar)
-  
-  y_axis_values <- pretty(c(-1*plot_range,plot_range))
-  
-  
-  driver_signature_nrsi_weight_forplot$variant_original <-
-    driver_signature_nrsi_weight_forplot$variant_original %>%
-    fct_relabel(~ gsub(pattern = "_",replacement = " ", .x))
-  
-  
-  driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) +
-    geom_bar(aes(x=variant_original,y = avg_sig_nrsi,fill=sig_char),stat="identity") +
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() +
-    geom_hline(yintercept = 0) +
-    scale_y_continuous(breaks = y_axis_values,
-                       labels = abs(y_axis_values),
-                       limits = c(-1*plot_range,plot_range))+
-    theme(axis.text.x = element_text(angle=35,vjust=1,hjust=1)) +
-    labs(title=
-           paste(tumor_type_ourdata),
-         y="Summed per-tumor relative variant effect size\ncontributed from each signature weight",
-         x="Variant",
-         fill = "Signature") +
-    theme(text = element_text(size=text_font_size)) +
-    guides(fill=guide_legend(ncol=legend_columns))
-  
-  
-  # flipped
-  
-  driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) +
-    geom_bar(aes(y=fct_rev(variant_original),x = avg_sig_nrsi,fill=sig_char),stat="identity") +
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() +
-    geom_vline(xintercept = 0) +
-    scale_x_continuous(breaks = y_axis_values,
-                       labels = abs(y_axis_values),
-                       limits = c(-1*plot_range,plot_range))+
-    theme(axis.text.y = element_text(angle=0,vjust=0.5,hjust=1)) +
-    # scale_y_discrete(position = "right") +
-    labs(
-      x="Summed per-tumor relative variant effect size\ncontributed from each signature weight",
-      fill = "Signature") +
-    theme(text = element_text(size=text_font_size)) +
-    guides(fill=guide_legend(ncol=legend_columns))
-  
-  
-  # driver_plot_out + theme(legend.position = "none")
-  
-  # avg weight plot ----
-  
-  
-  avg_weights %>%
-    ungroup() %>%
-    filter(tumor_type == tumor_type_ourdata) %>%
-    mutate(sig_full = signatures_names_matrix[as.character(Signature),"Etiology_sig"]) %>%
-    mutate(sig_full_fct =
-             forcats::fct_collapse(sig_full,
-                                   `UV light (7a–d,38)` = c("UV light (7a)",
-                                                            "UV light (7b)",
-                                                            "UV light (7c)",
-                                                            "UV light (7d)",
-                                                            "Potentially indirect damage from UV light (38)"),
-                                   `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
-                                   `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
-                                   `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
-                                                                       "Platinum drug chemotherapy (31)",
-                                                                       "Azathioprine treatment (used for immunosuppression) (32)",
-                                                                       "Prior chemotherapy treatment (35)"),
-                                   `Mutagenic chemical exposure (22,24,42,88)` = c("Aristolochic acid exposure (22)",
-                                                                                   "Aflatoxin exposure (24)",
-                                                                                   "Occupational exposure to haloalkanes (42)",
-                                                                                   "Colibactin exposure (COSMIC 3.1) (88)")
-                                   
-             )
-    ) %>%
-    mutate(sig_full_fct =
-             forcats::fct_recode(sig_full_fct,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
-                                 `Alcohol-associated (16)` = "Unknown (16)")) %>%
-    group_by(tumor_type,sig_full_fct) %>%
-    summarize(avg_weight = sum(avg_weight)) ->
-    avg_weights_sig_full
-  
-  
-  avg_weights_sig_full <- avg_weights_sig_full %>%
-    mutate(avg_weight = case_when(sig_full_fct %in% signatures_below_line_grouped ~ -avg_weight,
-                                  TRUE ~ avg_weight))
-  
-  
-  avg_weights_sig_full %>%
-    mutate(sig_char = as.character(sig_full_fct)) %>%
-    mutate(sig_char = case_when(
-      sig_char %in% names(color_vec_fullname) ~ sig_char,
-      TRUE ~ "Non-actionable or unknown signatures")) %>%
-    mutate(sig_char = forcats::fct_relevel(sig_char,
-                                           names(color_vec_fullname))) ->
-    avg_weights_sig_full_forplot
-  
-  
-  avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
-    geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") +
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() +
-    geom_hline(yintercept = 0) +
-    scale_y_continuous(limits=c(-1,1)
-                       # breaks = y_axis_values,
-                       # labels = abs(y_axis_values)
-    )+
-    theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
-    labs(title= plot_title,
-         x="Average signature weight",
-         # x="Variant",
-         fill = "Signature") +
-    theme(text = element_text(size=text_font_size),
-          axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
-    guides(fill=guide_legend(ncol=legend_columns)) +
-    theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
-  
-  
-  
-  
-  avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
-    geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") +
-    coord_flip() +
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() +
-    geom_hline(yintercept = 0) +
-    scale_y_continuous(limits=c(-1,1)
-                       # breaks = y_axis_values,
-                       # labels = abs(y_axis_values)
-    )+
-    theme(axis.text.x = element_text(angle=0,hjust=0.5,vjust=1)) +
-    labs(title = plot_title,
-         y="Average signature weight",
-         # x="Variant",
-         fill = "Signature") +
-    theme(text = element_text(size=text_font_size),
-          axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.y = element_blank()) +
-    guides(fill=guide_legend(ncol=legend_columns)) +
-    theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank())
-  
-  
-  
-  return(list(effect_plot = driver_plot_out + theme(legend.position = "none"),
-              avg_weight_plot = avg_weight_plot_out+ theme(legend.position = "none")))
-  
-}
+# # function to plot driver focused nrsi---- 
+# driver_focused_nrsi_weight_barplot <- function(tumor_type_ourdata,
+#                                                Bailey_tumor_type,
+#                                                signatures_below_line,
+#                                                signatures_below_line_grouped,
+#                                                drivers_to_plot=10,
+#                                                ordered_by_total_weight=F,
+#                                                text_font_size=10,
+#                                                legend_columns = 2,
+#                                                below_line_black=F,
+#                                                choose_variants_by_total_volume=F,
+#                                                plot_title=NULL){
+#   
+#   scaled_selection %>%
+#     filter(tumor_type == tumor_type_ourdata) %>%
+#     filter(Gene %in% bailey_driver_list$Gene[bailey_driver_list$Cancer==Bailey_tumor_type]) %>%
+#     # filter(variant_original == "BRAF_V600E") %>%
+#     mutate(Signature = forcats::as_factor(Signature)) %>%
+#     # mutate(sig_collapsed = forcats::fct_collapse(Signature,
+#     #                                              SBS7_all = c("SBS7a","SBS7b","SBS7c","SBS7d"))) %>%
+#     # mutate(sig_collapsed = forcats::fct_collapse(sig_collapsed,
+#     #                                              `SBS2,13` = c("SBS2","SBS13"))) %>%
+#     # tidyr::complete(sig_collapsed, fill = list(nrsi_per_tumor = 0)) %>%
+#     group_by(Unique_Patient_Identifier,variant_original,Signature) %>%
+#     summarize(nrsi_per_tumor = sum(nrsi_per_tumor)) %>%
+#     ungroup() %>%
+#     group_by(variant_original,Signature) %>%
+#     summarize(summed_sig_nrsi = sum(nrsi_per_tumor)) %>%
+#     ungroup() -> driver_signature_nrsi_weight
+#   
+#   
+#   if(choose_variants_by_total_volume){
+#     
+#     drivers_to_pick <- driver_signature_nrsi_weight %>%
+#       group_by(variant_original) %>%
+#       summarize(total_volume = sum(summed_sig_nrsi)) %>%
+#       arrange(desc(total_volume)) %>%
+#       pull(variant_original) %>%
+#       .[1:drivers_to_plot]
+#     
+#   }else{
+#     drivers_to_pick <- driver_signature_nrsi_weight$variant_original
+#   }
+#   
+#   if(ordered_by_total_weight){
+#     order_of_drivers <- driver_signature_nrsi_weight %>%
+#       filter(variant_original %in% drivers_to_pick) %>%
+#       group_by(variant_original) %>%
+#       summarize(summed_sigs = sum(summed_sig_nrsi)) %>%
+#       arrange(desc(summed_sigs)) %>%
+#       pull(variant_original) %>%
+#       .[!is.na(.)] %>%
+#       .[1:drivers_to_plot]
+#   }else{
+#     order_of_drivers <- driver_signature_nrsi_weight %>%
+#       filter(variant_original %in% drivers_to_pick) %>%
+#       filter(!Signature %in% signatures_below_line) %>%
+#       group_by(variant_original) %>%
+#       summarize(summed_sigs = sum(summed_sig_nrsi)) %>%
+#       arrange(desc(summed_sigs)) %>%
+#       pull(variant_original) %>%
+#       .[!is.na(.)] %>%
+#       .[1:drivers_to_plot]
+#   }
+#   
+#   
+#   
+#   driver_signature_nrsi_weight %>%
+#     mutate(signature_full = signatures_names_matrix[as.character(Signature), "Etiology_sig"]) %>%
+#     mutate(signature_full =
+#              forcats::fct_collapse(
+#                signature_full,
+#                `UV light (7a–d,38)` = c("UV light (7a)",
+#                                         "UV light (7b)",
+#                                         "UV light (7c)",
+#                                         "UV light (7d)",
+#                                         "Potentially indirect damage from UV light (38)"),
+#                `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+#                `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+#                `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+#                                                    "Platinum drug chemotherapy (31)",
+#                                                    "Azathioprine treatment (used for immunosuppression) (32)",
+#                                                    "Prior chemotherapy treatment (35)"),
+#                `Mutagenic chemical exposure (22,24,42,88)` = c("Aristolochic acid exposure (22)",
+#                                                                "Aflatoxin exposure (24)",
+#                                                                "Occupational exposure to haloalkanes (42)",
+#                                                                "Colibactin exposure (COSMIC 3.1) (88)")
+#                
+#              )
+#     ) %>%
+#     mutate(signature_full =
+#              forcats::fct_recode(signature_full,
+#                                  `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+#                                  `Alcohol-associated (16)` = "Unknown (16)")) ->
+#     driver_signature_nrsi_weight
+#   
+#   
+#   driver_signature_nrsi_weight %>%
+#     left_join(
+#       filter(
+#         variant_prevalence_main,
+#         tumor_type == tumor_type_ourdata),
+#       by = c("variant_original" = "variant_name")) ->
+#     driver_signature_nrsi_weight
+#   
+#   
+#   
+#   
+#   
+#   # mutate(signature_full = case_when(
+#   #   as.character(signature_full) %in% names(color_vec_fullname) ~ signature_full,
+#   #   TRUE ~ "Non-actionable or unknown signatures")) %>%
+#   driver_signature_nrsi_weight %>%
+#     group_by(variant_original,signature_full) %>%
+#     summarize(avg_sig_nrsi = sum(nrsi_per_tumor)/samples_covering) %>%
+#     ungroup() ->
+#     driver_signature_nrsi_weight_full_sig
+#   
+#   
+#   unique(driver_signature_nrsi_weight_full_sig$signature_full)
+#   
+#   driver_signature_nrsi_weight_forplot <- driver_signature_nrsi_weight_full_sig %>%
+#     filter(variant_original %in% order_of_drivers) %>%
+#     mutate(variant_original = factor(variant_original,levels=order_of_drivers)) %>%
+#     mutate(avg_sig_nrsi = case_when(signature_full %in% signatures_below_line_grouped ~ -avg_sig_nrsi,
+#                                     TRUE ~ avg_sig_nrsi))
+#   
+#   
+#   driver_signature_nrsi_weight_forplot$signature_full <- forcats::fct_relevel(
+#     driver_signature_nrsi_weight_forplot$signature_full,
+#     names(color_vec_fullname))
+#   
+#   # y_axis_values <- pretty(driver_signature_nrsi_weight_forplot$summed_sig_nrsi)
+#   
+#   
+#   driver_signature_nrsi_weight_forplot %>%
+#     mutate(sig_char = as.character(signature_full)) %>%
+#     mutate(sig_char = case_when(
+#       sig_char %in% names(color_vec_fullname) ~ sig_char,
+#       TRUE ~ "Non-actionable or unknown signatures")) %>%
+#     mutate(sig_char = forcats::fct_relevel(sig_char,
+#                                            names(color_vec_fullname))) ->
+#     driver_signature_nrsi_weight_forplot
+#   
+#   
+#   nrsi_summed <- driver_signature_nrsi_weight_forplot %>%
+#     mutate(collapsed_sig = case_when(
+#       sig_char == signatures_below_line_grouped ~ "below" ,
+#       TRUE ~ "above")) %>%
+#     group_by(variant_original,collapsed_sig) %>%
+#     summarize(main_bar = sum(abs(avg_sig_nrsi)))
+#   
+#   
+#   plot_range <- max(nrsi_summed$main_bar)
+#   
+#   y_axis_values <- pretty(c(-1*plot_range,plot_range))
+#   
+#   
+#   driver_signature_nrsi_weight_forplot$variant_original <-
+#     driver_signature_nrsi_weight_forplot$variant_original %>%
+#     fct_relabel(~ gsub(pattern = "_",replacement = " ", .x))
+#   
+#   
+#   driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) +
+#     geom_bar(aes(x=variant_original,y = avg_sig_nrsi,fill=sig_char),stat="identity") +
+#     scale_fill_manual(values = color_vec_fullname, na.value="black") +
+#     theme_bw() +
+#     geom_hline(yintercept = 0) +
+#     scale_y_continuous(breaks = y_axis_values,
+#                        labels = abs(y_axis_values),
+#                        limits = c(-1*plot_range,plot_range))+
+#     theme(axis.text.x = element_text(angle=35,vjust=1,hjust=1)) +
+#     labs(title=
+#            paste(tumor_type_ourdata),
+#          y="Summed per-tumor relative variant effect size\ncontributed from each signature weight",
+#          x="Variant",
+#          fill = "Signature") +
+#     theme(text = element_text(size=text_font_size)) +
+#     guides(fill=guide_legend(ncol=legend_columns))
+#   
+#   
+#   # flipped
+#   
+#   driver_plot_out <- ggplot(driver_signature_nrsi_weight_forplot) +
+#     geom_bar(aes(y=fct_rev(variant_original),x = avg_sig_nrsi,fill=sig_char),stat="identity") +
+#     scale_fill_manual(values = color_vec_fullname, na.value="black") +
+#     theme_bw() +
+#     geom_vline(xintercept = 0) +
+#     scale_x_continuous(breaks = y_axis_values,
+#                        labels = abs(y_axis_values),
+#                        limits = c(-1*plot_range,plot_range))+
+#     theme(axis.text.y = element_text(angle=0,vjust=0.5,hjust=1)) +
+#     # scale_y_discrete(position = "right") +
+#     labs(
+#       x="Summed per-tumor relative variant effect size\ncontributed from each signature weight",
+#       fill = "Signature") +
+#     theme(text = element_text(size=text_font_size)) +
+#     guides(fill=guide_legend(ncol=legend_columns))
+#   
+#   
+#   # driver_plot_out + theme(legend.position = "none")
+#   
+#   # avg weight plot ----
+#   
+#   
+#   avg_weights %>%
+#     ungroup() %>%
+#     filter(tumor_type == tumor_type_ourdata) %>%
+#     mutate(sig_full = signatures_names_matrix[as.character(Signature),"Etiology_sig"]) %>%
+#     mutate(sig_full_fct =
+#              forcats::fct_collapse(sig_full,
+#                                    `UV light (7a–d,38)` = c("UV light (7a)",
+#                                                             "UV light (7b)",
+#                                                             "UV light (7c)",
+#                                                             "UV light (7d)",
+#                                                             "Potentially indirect damage from UV light (38)"),
+#                                    `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
+#                                    `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
+#                                    `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
+#                                                                        "Platinum drug chemotherapy (31)",
+#                                                                        "Azathioprine treatment (used for immunosuppression) (32)",
+#                                                                        "Prior chemotherapy treatment (35)"),
+#                                    `Mutagenic chemical exposure (22,24,42,88)` = c("Aristolochic acid exposure (22)",
+#                                                                                    "Aflatoxin exposure (24)",
+#                                                                                    "Occupational exposure to haloalkanes (42)",
+#                                                                                    "Colibactin exposure (COSMIC 3.1) (88)")
+#                                    
+#              )
+#     ) %>%
+#     mutate(sig_full_fct =
+#              forcats::fct_recode(sig_full_fct,
+#                                  `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+#                                  `Alcohol-associated (16)` = "Unknown (16)")) %>%
+#     group_by(tumor_type,sig_full_fct) %>%
+#     summarize(avg_weight = sum(avg_weight)) ->
+#     avg_weights_sig_full
+#   
+#   
+#   avg_weights_sig_full <- avg_weights_sig_full %>%
+#     mutate(avg_weight = case_when(sig_full_fct %in% signatures_below_line_grouped ~ -avg_weight,
+#                                   TRUE ~ avg_weight))
+#   
+#   
+#   avg_weights_sig_full %>%
+#     mutate(sig_char = as.character(sig_full_fct)) %>%
+#     mutate(sig_char = case_when(
+#       sig_char %in% names(color_vec_fullname) ~ sig_char,
+#       TRUE ~ "Non-actionable or unknown signatures")) %>%
+#     mutate(sig_char = forcats::fct_relevel(sig_char,
+#                                            names(color_vec_fullname))) ->
+#     avg_weights_sig_full_forplot
+#   
+#   
+#   avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
+#     geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") +
+#     scale_fill_manual(values = color_vec_fullname, na.value="black") +
+#     theme_bw() +
+#     geom_hline(yintercept = 0) +
+#     scale_y_continuous(limits=c(-1,1)
+#                        # breaks = y_axis_values,
+#                        # labels = abs(y_axis_values)
+#     )+
+#     theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
+#     labs(title= plot_title,
+#          x="Average signature weight",
+#          # x="Variant",
+#          fill = "Signature") +
+#     theme(text = element_text(size=text_font_size),
+#           axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+#     guides(fill=guide_legend(ncol=legend_columns)) +
+#     theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
+#   
+#   
+#   
+#   
+#   avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
+#     geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity") +
+#     coord_flip() +
+#     scale_fill_manual(values = color_vec_fullname, na.value="black") +
+#     theme_bw() +
+#     geom_hline(yintercept = 0) +
+#     scale_y_continuous(limits=c(-1,1)
+#                        # breaks = y_axis_values,
+#                        # labels = abs(y_axis_values)
+#     )+
+#     theme(axis.text.x = element_text(angle=0,hjust=0.5,vjust=1)) +
+#     labs(title = plot_title,
+#          y="Average signature weight",
+#          # x="Variant",
+#          fill = "Signature") +
+#     theme(text = element_text(size=text_font_size),
+#           axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.y = element_blank()) +
+#     guides(fill=guide_legend(ncol=legend_columns)) +
+#     theme(panel.grid.major.y = element_blank(), panel.grid.minor.y = element_blank())
+#   
+#   
+#   
+#   return(list(effect_plot = driver_plot_out + theme(legend.position = "none"),
+#               avg_weight_plot = avg_weight_plot_out+ theme(legend.position = "none")))
+#   
+# }
 # 
 # 
 # 
@@ -517,7 +517,7 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
   driver_signature_nrsi_weight %>%
     mutate(signature_full = signatures_names_matrix[as.character(Signature), "Etiology_sig"]) %>%
     mutate(signature_full =
-             forcats::fct_collapse(
+             suppressWarnings(forcats::fct_collapse(
                signature_full,
                `UV light (7a–d,38)` = c("UV light (7a)",
                                         "UV light (7b)",
@@ -535,12 +535,12 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
                                                                "Occupational exposure to haloalkanes (42)",
                                                                "Colibactin exposure (COSMIC 3.1) (88)")
                
-             )
+             ))
     ) %>%
     mutate(signature_full =
-             forcats::fct_recode(signature_full,
+             suppressWarnings(forcats::fct_recode(signature_full,
                                  `Deamination with age, clock-like (1)` = "Deamination with age (1)",
-                                 `Alcohol-associated (16)` = "Unknown (16)")) ->
+                                 `Alcohol-associated (16)` = "Unknown (16)"))) ->
     driver_signature_nrsi_weight
   
   
@@ -667,7 +667,7 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
     filter(tumor_type == tumor_type_ourdata) %>%
     mutate(sig_full = signatures_names_matrix[as.character(Signature),"Etiology_sig"]) %>%
     mutate(sig_full_fct =
-             forcats::fct_collapse(sig_full,
+             suppressWarnings( forcats::fct_collapse(sig_full,
                                    `UV light (7a–d,38)` = c("UV light (7a)",
                                                             "UV light (7b)",
                                                             "UV light (7c)",
@@ -684,12 +684,12 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
                                                                                    "Occupational exposure to haloalkanes (42)",
                                                                                    "Colibactin exposure (COSMIC 3.1) (88)")
                                    
-             )
+             ) )
     ) %>%
     mutate(sig_full_fct =
-             forcats::fct_recode(sig_full_fct,
+             suppressWarnings(forcats::fct_recode(sig_full_fct,
                                  `Deamination with age, clock-like (1)` = "Deamination with age (1)",
-                                 `Alcohol-associated (16)` = "Unknown (16)")) %>%
+                                 `Alcohol-associated (16)` = "Unknown (16)"))) %>%
     group_by(tumor_type,sig_full_fct) %>%
     summarize(avg_weight = sum(avg_weight)) ->
     avg_weights_sig_full
@@ -710,25 +710,25 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
     avg_weights_sig_full_forplot
   
   
-  avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
-    geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity", color="gray20",size=0.1) +
-    scale_fill_manual(values = color_vec_fullname, na.value="black") +
-    theme_bw() +
-    geom_hline(yintercept = 0) +
-    scale_y_continuous(limits=c(-1,1)
-                       # breaks = y_axis_values,
-                       # labels = abs(y_axis_values)
-    )+
-    theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
-    labs(title= plot_title,
-         x="Average signature weight",
-         # x="Variant",
-         fill = "Signature") +
-    theme(text = element_text(size=text_font_size),
-          axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
-    guides(fill=guide_legend(ncol=legend_columns)) +
-    theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
-  
+  # avg_weight_plot_out <- ggplot(avg_weights_sig_full_forplot) +
+  #   geom_bar(aes(x=1,y = avg_weight,fill=sig_char),stat="identity", color="gray20",size=0.1) +
+  #   scale_fill_manual(values = color_vec_fullname, na.value="black") +
+  #   theme_bw() +
+  #   geom_hline(yintercept = 0) +
+  #   scale_y_continuous(limits=c(-1,1)
+  #                      # breaks = y_axis_values,
+  #                      # labels = abs(y_axis_values)
+  #   )+
+  #   theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) +
+  #   labs(title= plot_title,
+  #        x="Average signature weight",
+  #        # x="Variant",
+  #        fill = "Signature") +
+  #   theme(text = element_text(size=text_font_size),
+  #         axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+  #   guides(fill=guide_legend(ncol=legend_columns)) +
+  #   theme(panel.grid.major.x = element_blank(), panel.grid.minor.x = element_blank())
+  # 
   
   
   
@@ -738,9 +738,9 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
     scale_fill_manual(values = color_vec_fullname, na.value="black") +
     theme_bw() +
     geom_hline(yintercept = 0) +
-    scale_y_continuous(limits=c(-1,1)
+    scale_y_continuous(limits=c(-1,1),
                        # breaks = y_axis_values,
-                       # labels = abs(y_axis_values)
+                       labels = c("1.0","0.5","0.0","0.5","1.0")
     )+
     theme(axis.text.x = element_text(angle=0,hjust=0.5,vjust=1)) +
     labs(title = plot_title,
@@ -1210,7 +1210,7 @@ leg_ggplot <- ggplot(leg_df, aes(x=x,y=1,fill=Signature)) +
   theme(legend.position="bottom") + 
   guides(fill=guide_legend(ncol=2))
 
-leg_legend <- cowplot::get_legend(leg_ggplot)
+leg_legend <- suppressWarnings( cowplot::get_legend(leg_ggplot))
 
 
 
@@ -1249,7 +1249,7 @@ leg_ggplot <- ggplot(leg_df, aes(x=x,y=1,fill=Signature)) +
   theme(legend.position="bottom") + 
   guides(fill=guide_legend(nrow=2))
 
-leg_legend <- cowplot::get_legend(leg_ggplot)
+leg_legend <- suppressWarnings( cowplot::get_legend(leg_ggplot))
 
 
 

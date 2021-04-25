@@ -11,7 +11,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(cancereffectsizeR) # use v2.0 
+library(cancereffectsizeR) # use v2.1.2 
 library(cowplot)
 library(RColorBrewer)
 
@@ -21,6 +21,8 @@ variant_name_extracter <- function(variant_names_vec){
   return(variant_names)
 }
 
+
+# set the colors for the manuscript figures
 color_vec_fullname <- setNames(object = c("gray60","gray80",RColorBrewer::brewer.pal(n = 7,name = "Set3"),"black")
                                , nm = c("Deamination with age, clock-like (1)",
                                         "Unknown, clock-like (5)",
@@ -50,7 +52,7 @@ load("input_data/from_cluster/JSD_combined.RData")
 load("input_data/from_cluster/weights_combined.RData")
 load("input_data/from_cluster/combined_substitution_data.RData")
 
-
+# Some of the TCGA tumors in the "ESCA" dataset are actually ESCC
 per_tumor_data_main <- per_tumor_data_main %>%
   mutate(tumor_type = case_when(
     tumor_type == "ESCA" ~ "ESCA and ESCC", 
@@ -75,11 +77,11 @@ names(total_substitutions)[which(names(total_substitutions)=="ESCA")] <- "ESCA a
 
 ## Load in fig 1 data
 
-Here, we describe the method to calculate the population scaled selection intensity, using LUSC tumor `MDA-1229` as an example.
+Here, we describe the method to calculate the population scaled selection intensity, using LUSC tumor `MDA-1229-T` as an example.
 
 ```{r load in figure 1 data}
 
-tumor_pick <- "MDA-1229"
+tumor_pick <- "MDA-1229-T"
 # data(signatures_names_matrix,package = "cancereffectsizeR")
 
 signatures_names_matrix <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
@@ -255,8 +257,8 @@ signatures_m$variant[which(signatures_m$name == "T[C>G]G")] <- "NFE2L2 R34P"
 signatures_m$variant[which(signatures_m$name == "C[C>A]A")] <- "OR13G1 L79L"
 signatures_m$variant[which(signatures_m$name == "C[C>T]G")] <- "TP53 R282W"
 
-variant_levels <- c("NFE2L2 R34P", "TP53 R282W", "OR13G1 L79L")
-trinuc_levels <- c( "T[C>G]G", "C[C>T]G","C[C>A]A")
+variant_levels <- c("TP53 R282W", "NFE2L2 R34P",  "OR13G1 L79L")
+trinuc_levels <- c("C[C>T]G", "T[C>G]G", "C[C>A]A")
 signature_levels <- c("Unknown (8)", "Tobacco smoking (4)", "Unknown, clock-like (5)")
 
 variant_trinuc_names <- setNames(object = variant_levels,nm = trinuc_levels)
@@ -436,7 +438,7 @@ this_pop_scaled_effect_size <- population_scaled_selection %>%
   filter(value > 0) %>%
   mutate(signatures = gsub(pattern = "_nrsi",replacement = "",x = name)) %>%
   # group_by(variant) %>%
-  # normalize contrited weight to sum to 1 
+  # normalize contributed weight to sum to 1 
   mutate(pct = value / sum(value)) %>% 
   # assign signature etiology 
   mutate(signatures = signatures_names_matrix[as.character(signatures),"Etiology_sig"])
@@ -521,7 +523,7 @@ save_plot("output_data/figure_1_method_description_results.png",plot = combined_
 
 # Figure 2: JS Divergence and flux vs effectsize 
 
-## JSD explore
+## JSD, exploring and visualizing the data
 
 ```{r clean JSD data and plot supp JSD figure}
 JSD_median <- JSD_combined %>%
@@ -589,29 +591,6 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
   
   these_JSD <- these_JSD[order(these_JSD$JSD,decreasing = T),]
   
-  # 
-  # these_weights <- weights_combined[weights_combined$tumor_type==this_tumor_type,]
-  # these_NRSI <- per_tumor_data_main[per_tumor_data_main$tumor_type==this_tumor_type,]
-  # 
-  # these_weights <- these_weights[these_weights$Tumor %in% these_NRSI$Unique_Patient_Identifier,]
-  # 
-  # these_NRSI <- these_NRSI %>% 
-  #   mutate(Tumor = Unique_Patient_Identifier) %>%
-  #   mutate(Signature = gsub(pattern = "_nrsi",replacement = "",x = Signature))
-  # 
-  # these_weights$Tumor <- factor(these_weights$Tumor, levels=these_JSD$Tumor)
-  # these_NRSI$Tumor <- factor(these_NRSI$Tumor, levels=these_JSD$Tumor)
-  # 
-  # these_weights <- these_weights %>%
-  #   filter(!is.na(Tumor))
-  # 
-  # these_NRSI <- these_NRSI %>%
-  #   filter(!is.na(Tumor))
-  
-  # these_weights$Signature <- factor(these_weights$Signature, unique(these_weights$Signature))
-  # 
-  # these_NRSI$Signature <- factor(these_NRSI$Signature, unique(these_weights$Signature))
-  # 
   
   
   these_JSD_full <- these_JSD
@@ -673,30 +652,6 @@ signatures_present_for_plot$Signature <- factor(signatures_present_for_plot$Sign
 
 
 
-
-# new color palette
-# signatures_present_for_plot %>%
-#   mutate(Signature = 
-#            forcats::fct_collapse(
-#              Signature,
-#              `UV light (7a,7b,7c,7d)` = c("UV light (7a)",
-#                                           "UV light (7b)",
-#                                           "UV light (7c)",
-#                                           "UV light (7d)"),
-#              `APOBEC (2,13)` = c("APOBEC (2)","APOBEC (13)"),
-#              `Tobacco (4,29)` = c("Tobacco smoking (4)", "Tobacco chewing (29)"),
-#              `Prior treatment (11,31,32,35)` = c("Temozolomide treatment (11)",
-#                                                  "Platinum drug chemotherapy (31)",
-#                                                  "Azathioprine treatment (used for immunosuppression) (32)",
-#                                                  "Prior chemotherapy treatment (35)"),
-#              `Mutagenic chemical exposure (22,24,42)` = c("Aristolochic acid exposure (22)",
-#                                                           "Aflatoxin exposure (24)",
-#                                                           "Occupational exposure to haloalkanes (42)")
-#              
-#            )
-#   )
-
-
 these_colors[c("APOBEC (2)","APOBEC (13)")] <- color_vec_fullname["APOBEC (2,13)"]
 these_colors["Deamination with age (1)"] <- color_vec_fullname["Deamination with age, clock-like (1)"]
 these_colors["Defective homologous recombination (3)"] <- color_vec_fullname["Defective homologous recombination (3)"]
@@ -735,11 +690,11 @@ signatures_present_for_plot %>%
                                  `Alcohol-associated (16)` = "Unknown (16)")) -> signatures_present_for_plot
 
 
-legend_for_plot <-  cowplot::get_legend( ggplot(signatures_present_for_plot, aes(fill=Signature)) + 
+legend_for_plot <-  suppressWarnings(  cowplot::get_legend( ggplot(signatures_present_for_plot, aes(fill=Signature)) + 
                                            geom_bar(aes(x=xx,y=yy),stat = "identity",color="black") + 
                                            scale_fill_manual(values = color_vec_fullname,na.value="black") + 
                                            guides(fill=guide_legend(nrow=2)) +
-                                           theme(legend.position = "bottom"))
+                                           theme(legend.position = "bottom")))
 
 ```
 
@@ -950,7 +905,7 @@ four_x_four_plot_w_legend
 ```
 
 
-# Figure 3
+# Figure 4
 
 
 ## Weight effect dotplot
@@ -1020,19 +975,6 @@ save(all_weights_and_effects, file="output_data/all_weights_and_effects.RData")
 
 ```{r dotplot stats setup}
 
-# all(JSD_combined$Tumor %in% all_weights_and_effects$Tumor)
-# all(all_weights_and_effects$Tumor  %in% JSD_combined$Tumor)
-# 
-# JSD_combined_for_dotplot <- JSD_combined
-# 
-# JSD_combined_for_dotplot$tumor_type <- 
-#   forcats::fct_recode(JSD_combined_for_dotplot$tumor_type,
-#                                             `SKCM, primary`="SKCM_primary",
-#                                             `SKCM, metastases` = "SKCM_metastasis",
-#                                             `HNSC (HPV+)` = "HNSC_HPVpos",
-#                                             `HNSC (HPV−)` = "HNSC_HPVneg",
-#                                             `BRCA (ER–)` = "BRCA_ER_neg",
-#                                             `BRCA (ER+)` = "BRCA_ER_pos")
 
 
 
@@ -1089,6 +1031,9 @@ color_vec <- setNames(object = weight_and_effect_data$color_aes,nm = weight_and_
 weight_and_effect_data %>%
   filter(Signature == "SBS5" & tumor_type == "LGG")
 
+weight_and_effect_data %>%
+  filter(Signature == "SBS1" & tumor_type == "LGG")
+
 
 weight_and_effect_data %>%
   filter(Signature == "SBS2" & tumor_type == "THCA")
@@ -1103,25 +1048,6 @@ weight_and_effect_data %>%
 ```{r dotplot legend work}
 # working on legend
 
-# ggplot() +
-#   geom_point(data = weight_and_effect_data,
-#             aes(x=tumor_type, y=Signature,size=Weight_prop_mean,shape=label_shape,col=color_aes)
-#             # ,
-#             # family = "Arial Unicode MS"
-#             ) +
-#   theme_classic(base_family = "Arial Unicode MS")  +
-#   scale_x_discrete(position = "top") +
-#   scale_y_discrete(limits=rev(levels(sigs_present)),
-#                    labels=gsub(pattern = "SBS",replacement = "",x = rev(levels(sigs_present))))  +
-#   theme(axis.text.x = element_text(angle=45,hjust=0)) +
-#   scale_color_manual(values = color_vec) +
-#   labs(x="Tumor type") +
-#   scale_size(range = c(0, 10),breaks = c(0,0.05,0.1,0.2,0.4,0.6,1),name = "Proportional weight") +
-#   geom_vline(xintercept = v_lines,alpha=0.1) +
-#   geom_hline(yintercept = h_lines,alpha=0.1) +
-#   theme(legend.position = "bottom") 
-
-# ggsave(filename = "output_data/weight_sig_dotplot.png",plot = dotplot,height = 8,width = 6)
 
 for_sig_scale <- weight_and_effect_data %>%
   filter(tumor_type == "BLCA" & Signature %in% c("SBS1","SBS10a")) %>%
@@ -1129,39 +1055,6 @@ for_sig_scale <- weight_and_effect_data %>%
   mutate(Weight_prop_mean = rep(.5,4))
 
 
-ggplot() + 
-  geom_text(data = subset(weight_and_effect_data,data_type=="weight" & significant == FALSE), 
-            aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-            label="\u25D6", family = "Arial Unicode MS",col="gray50") + 
-  # geom_text(data = subset(weight_and_effect_data,data_type=="effect" & significant == FALSE), 
-  #           aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-  #           label="\u25D7", family = "Arial Unicode MS",col="gray90") + 
-  # geom_text(data = subset(weight_and_effect_data,data_type=="weight" & significant == TRUE), 
-  #           aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-  #           label="\u25D6", family = "Arial Unicode MS") + 
-  # geom_text(data = subset(weight_and_effect_data,data_type=="effect" & significant == TRUE), 
-  #           aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-  #           label="\u25D7", family = "Arial Unicode MS",col="red") + 
-  theme_classic() 
-
-ggplot() + 
-  geom_text(data = subset(weight_and_effect_data,data_type=="weight" & significant == FALSE), 
-            aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-            label="\u25D6", family = "Arial Unicode MS",col="gray50") + 
-  geom_text(data = subset(weight_and_effect_data,data_type=="effect" & significant == FALSE), 
-            aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-            label="\u25D7", family = "Arial Unicode MS",col="gray90") + 
-  geom_text(data = subset(weight_and_effect_data,data_type=="weight" & significant == TRUE), 
-            aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-            label="\u25D6", family = "Arial Unicode MS") + 
-  geom_text(data = subset(weight_and_effect_data,data_type=="effect" & significant == TRUE), 
-            aes(x=tumor_type, y=Signature,size=Weight_prop_mean),
-            label="\u25D7", family = "Arial Unicode MS",col="red") + 
-  geom_text(data = for_sig_scale, 
-            aes(x=tumor_type, y=Signature,size=Weight_prop_mean,col = significant),
-            label="\u25D7", family = "Arial Unicode MS") + 
-  scale_color_manual(values = setNames(nm = c(T,F),object = c("red","red"))) + 
-  theme_classic() 
 
 ```
 
@@ -1293,16 +1186,16 @@ per_tumor_combined$Signature <- factor(per_tumor_combined$Signature, levels=sign
 per_tumor_combined$Signature_long <- factor(per_tumor_combined$Signature_long, levels=signatures_names_matrix[,"Etiology_sig"])
 
 # "Proportion of total per-tumor proportional effect size"
-ggplot(data = per_tumor_combined) + 
-  geom_bar(aes(x=tumor_type, 
-               y=summed_effect_prop,
-               fill=Signature),col="black",
-           stat = "identity") + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) + 
-  labs(y="Proportion of total per-tumor proportional effect size", x="Tumor type")
-
-
+# ggplot(data = per_tumor_combined) + 
+#   geom_bar(aes(x=tumor_type, 
+#                y=summed_effect_prop,
+#                fill=Signature),col="black",
+#            stat = "identity") + 
+#   theme_bw() + 
+#   theme(axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) + 
+#   labs(y="Proportion of total per-tumor proportional effect size", x="Tumor type")
+# 
+# 
 
 ```
 
@@ -1483,13 +1376,7 @@ col_vec <- setNames(object = c(
   nm = c(levels(action_weights_m$Signature)))
 
 # 
-# col_vec <- setNames(object = c(
-#   rainbow(n = length(actionable_signatures)),"gray50"),
-#   nm = c(levels(action_weights_m$Signature)))
 
-# col_vec <- setNames(object = c(
-#   brewer.pal(name = "Set3",n = length(actionable_signatures)),"gray50"),
-#   nm = c(levels(action_weights_m$Signature)))
 
 # reorder for descending total actionable effects 
 
@@ -1501,6 +1388,9 @@ actionable_weight_desc <- action_effects_m %>%
                              "Non-actionable and unknown signatures")) %>% 
   summarize(sum_weight = sum(weight)) %>%
   arrange(sum_weight)
+
+
+actionable_weight_desc
 
 
 action_weights_m %>% 
@@ -1532,48 +1422,6 @@ action_weights_m$tumor_type <- factor(action_weights_m$tumor_type,levels=actiona
 action_effects_m$tumor_type <- factor(action_effects_m$tumor_type,levels=actionable_weight_desc$tumor_type)
 
 # 
-# action_weights_m_plot <- ggplot(action_weights_m) + 
-#   geom_bar(aes(x=tumor_type,y=weight,fill=Signature),stat="identity") + 
-#   theme_bw() + 
-#   theme(axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) + 
-#   scale_fill_manual(values = col_vec) + 
-#   labs(title="Weights")
-# 
-# 
-# action_effects_m_plot <- ggplot(action_effects_m) + 
-#   geom_bar(aes(x=tumor_type,y=weight,fill=Signature),stat="identity") + 
-#   theme_bw() + 
-#   theme(axis.text.x = element_text(angle=90,hjust=1,vjust=0.5)) + 
-#   scale_fill_manual(values = col_vec) + 
-#   labs(title="Effects")
-# 
-# 
-# ggsave(plot = action_weights_m_plot,filename = "output_data/action_weights_m_plot.png")
-# ggsave(plot = action_effects_m_plot,filename = "output_data/action_effects_m_plot.png")
-# 
-# 
-# weight_effect_legend <- cowplot::get_legend(action_effects_m_plot)
-# 
-# 
-# 
-# weights_v_effect_plot <- cowplot::plot_grid(action_weights_m_plot + 
-#                                               theme(legend.position = "none"),
-#                                             action_effects_m_plot + 
-#                                               theme(legend.position = "none"),
-#                                             weight_effect_legend,rel_widths = c(1,1,1),
-#                                             align = "h",nrow=1)
-# 
-# cowplot::save_plot(filename = "output_data/action_weights_v_effects.png",
-#                    plot = weights_v_effect_plot,base_height = 10,base_width = 15)
-# 
-# 
-# 
-# 
-
-
-# col_vec
-
-# action_weights_m$Signature 
 
 
 action_weights_m %>%
@@ -1695,7 +1543,7 @@ just_shared_axis_text <- ggplot(action_effects_m) +
   theme(plot.title = element_text(hjust = 0.5))
 
 
-weight_effect_legend <- cowplot::get_legend(action_effects_m_plot)
+weight_effect_legend <- suppressWarnings( cowplot::get_legend(action_effects_m_plot))
 
 weights_v_effect_plot <- cowplot::plot_grid(action_weights_m_plot + 
                                               theme(legend.position = "none"),
@@ -1721,10 +1569,12 @@ cowplot::save_plot(filename = "output_data/action_weights_v_effects_sideways.png
 
 
 
-
-weights_v_effect_plot_legend
-
 ```
+
+```{r fig.width=10}
+weights_v_effect_plot_legend
+```
+
 
 
 
@@ -1736,6 +1586,12 @@ action_effects_m %>%
   summarize(total_aging_effect_weight = sum(weight)) %>%
   arrange(desc(total_aging_effect_weight))
 
+
+action_effects_m %>% 
+  filter(Signature %in% c("Deamination with age, clock-like (1)","Unknown, clock-like (5)")) %>%
+  group_by(tumor_type) %>%
+  summarize(total_aging_effect_weight = sum(weight)) %>%
+  arrange(total_aging_effect_weight)
 
 action_effects_m %>% 
   filter(tumor_type == "LGG")
@@ -1755,6 +1611,15 @@ weights_combined_per_tumor_type_unknown %>%
   arrange(desc(total_unknown))
   
 
+
+action_effects_m %>%
+  filter(Signature == "Deamination with age, clock-like (1)") %>%
+  arrange(weight)
+
+
+action_effects_m %>%
+  filter(Signature == "Deamination with age, clock-like (1)") %>%
+  arrange(desc(weight))
 ```
 
 
@@ -1833,6 +1698,16 @@ wilcoxon_results_binned %>%
 
 wilcoxon_results_binned %>%
   filter(tumor_type == "LUSC")
+
+
+wilcoxon_results_binned %>%
+  filter(tumor_type == "LUAD", 
+         Signature %in% c("Tobacco smoking (4)","Tobacco chewing (29)") ) 
+
+wilcoxon_results_binned %>%
+  filter(tumor_type == "LUSC",
+         Signature %in% c("Tobacco smoking (4)","Tobacco chewing (29)"))
+
 
 write.table(x = wilcoxon_results_binned,file = "output_data/wilcoxon_results_binned_signatures.tsv",sep = "\t",row.names = F,quote = F)
 
@@ -1947,7 +1822,7 @@ write.table(x = removed_yg_tumors,file = "output_data/table_s1_removed_YG_tumors
 
 
 
-# Driver centric signature mutational effect size 
+# Driver centric signature mutational effect size, Figure 3 
 
 
 ```{r driver_centric_figure}
