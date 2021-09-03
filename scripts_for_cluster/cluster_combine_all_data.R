@@ -1,6 +1,15 @@
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
+
+prefix <- args 
+
 # script to combine all effect size and population-scaled effect size data
 
-library(tidyverse)
+# library(tidyverse)
+library(magrittr)
+library(dplyr)
+library(stringr)
+library(tidyr)
 library(cancereffectsizeR)
 
 
@@ -8,9 +17,10 @@ library(cancereffectsizeR)
 message("Combining effect size data...")
 
 
-effect_size_files <-  dir(full.names = T,recursive = T)[
-  grep(pattern = "__selection_output.RData",x = dir(recursive = T))]
+files <- dir(full.names = T,recursive = T)
 
+effect_size_files <- files[str_detect(string = files, pattern = prefix) & 
+                             str_detect(string = files, pattern = "__selection_output")]
 
 
 tumor_names <- unlist(strsplit(effect_size_files,split = "/"))[c(F,T,F)]
@@ -21,6 +31,7 @@ selection_data_main <- NULL
 variant_prevalence_main <- NULL
 total_substitutions <- vector(mode = "list",length = length(tumor_names))
 names(total_substitutions) <- tumor_names
+all_maf <- NULL
 
 for(j in 1:length(effect_size_files)){
   
@@ -47,6 +58,14 @@ for(j in 1:length(effect_size_files)){
   
   }
   
+  maf <- maf %>% 
+    mutate(tumor_type = tumor_names[j]) %>% 
+    select(Unique_Patient_Identifier, tumor_type)
+  
+  all_maf <- rbind(all_maf,maf)
+       
+  
+  
   variant_prevalence_main <- rbind(variant_prevalence_main, variant_prevalence)
   
   selection_data <- as.data.frame(analysis@selection_results$selection.1)
@@ -64,18 +83,23 @@ for(j in 1:length(effect_size_files)){
   
 }
 
-save(selection_data_main,file = "combined_selection_results.RData")
+save(selection_data_main,file = paste0(prefix,"-combined_selection_results.RData"))
 
-save(total_substitutions, file = "combined_substitution_data.RData")
+save(total_substitutions, file = paste0(prefix,"-combined_substitution_data.RData"))
 
-save(variant_prevalence_main, file = "variant_prevalence_main.RData")
+save(variant_prevalence_main, file = paste0(prefix,"-variant_prevalence_main.RData"))
+
 
 
 # combining JSD ---- 
 message("Combining JSD data...")
 
 
-JSD_files <- dir(full.names = T,recursive = T)[grep(pattern = "_tumor_JSD_df.RData",x = dir(recursive = T))]
+
+JSD_files <- files[str_detect(string = files, pattern = prefix) & 
+                     str_detect(string = files, pattern = "JSD_df")]
+  
+  # dir(full.names = T,recursive = T)[grep(pattern = "_tumor_JSD_df.RData",x = dir(recursive = T))]
 
 
 
@@ -96,14 +120,19 @@ for(ind in 1:length(JSD_files)){
   print(tumor_names[ind])
 }
 
-save(JSD_combined, file="JSD_combined.RData")
-save(weights_combined, file="weights_combined.RData")
+save(JSD_combined, file=paste0(prefix,"-JSD_combined.RData"))
+save(weights_combined, file=paste0(prefix,"-weights_combined.RData"))
 
 
 # per tumor scaled selection and combine -----
 message("Calculating the per tumor scaled selection and combining data...")
 
-per_tumor_data_files <- dir(full.names = T,recursive = T)[grep(pattern = "_population_scaled_selection.RData",x = dir(recursive = T))]
+per_tumor_data_files <- files[ 
+  str_detect(string = files, pattern = prefix) & 
+    str_detect(string = files, pattern = "_population_scaled")]
+  
+  
+  # dir(full.names = T,recursive = T)[grep(pattern = "_population_scaled_selection.RData",x = dir(recursive = T))]
 
 tumor_names <- unlist(strsplit(per_tumor_data_files,split = "/"))[c(F,T,F)]
 
@@ -154,10 +183,8 @@ for(j in 1:length(per_tumor_data_files)){
 }
 
 
-save(per_tumor_data_main,file = "combined_per_tumor_proportion_scaled_selection.RData")
-
-save(recurrent_var_per_tumor_main,file = "recurrent_var_per_tumor.RData")
-
-save(all_scaled_selection_main, file="all_scaled_selection_main.RData")
+save(per_tumor_data_main,file = paste0(prefix,"-combined_per_tumor_proportion_scaled_selection.RData"))
+save(recurrent_var_per_tumor_main,file = paste0(prefix,"-recurrent_var_per_tumor.RData"))
+save(all_scaled_selection_main, file= paste0(prefix,"-all_scaled_selection_main.RData"))
 
 

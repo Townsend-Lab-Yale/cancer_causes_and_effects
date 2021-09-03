@@ -9,8 +9,8 @@ library(tidyverse)
 library(cancereffectsizeR)
 
 # load in data ----
-load("input_data/from_cluster/all_scaled_selection_main.RData")
-load("input_data/from_cluster/combined_selection_results.RData")
+load("input_data/from_cluster/MP_2_2_0-all_scaled_selection_main.RData")
+load("input_data/from_cluster/MP_2_2_0-combined_selection_results.RData")
 
 # the following file is from this manuscript:
 # Bailey, Matthew H., Collin Tokheim, Eduard Porta-Pardo, Sohini Sengupta, Denis Bertrand, Amila Weerasinghe, Antonio Colaprico, et al. 2018. “Comprehensive Characterization of Cancer Driver Genes and Mutations.” Cell 174 (4): 1034–35.
@@ -22,8 +22,8 @@ load("input_data/from_cluster/combined_selection_results.RData")
 bailey_driver_list <- readxl::read_excel(path = "dev/Bailey_etal_Cell_1-s2.0-S009286741830237X-mmc1.xlsx",sheet = "Table S1",skip = 3)
 
 
-load("input_data/from_cluster/weights_combined.RData")
-load("dev/variant_prevalence_main.RData")
+load("input_data/from_cluster/MP_2_2_0-weights_combined.RData")
+load("input_data/from_cluster/MP_2_2_0-variant_prevalence_main.RData")
 
 
 
@@ -511,6 +511,17 @@ driver_focused_nrsi_weight_barplot_avg <- function(tumor_type_ourdata,
       pull(variant_original) %>%
       .[!is.na(.)] %>%
       .[1:drivers_to_plot]
+    
+    if(any(is.na(order_of_drivers))){
+     
+      re_include <- setdiff(drivers_to_pick,order_of_drivers)
+      
+      
+      if(length(re_include)>0){
+        order_of_drivers[is.na(order_of_drivers)] <- re_include
+        }
+      
+    }
   }
   
   
@@ -1133,8 +1144,11 @@ BRCA_ERp_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "
 #  LIHC----
 LIHC_output <- driver_focused_nrsi_weight_barplot_avg(tumor_type_ourdata = "LIHC",
                                                       Bailey_tumor_type = "LIHC",
-                                                      signatures_below_line = c("SBS16"),
-                                                      signatures_below_line_grouped = "Alcohol-associated (16)",
+                                                      signatures_below_line = c("SBS22",
+                                                                                "SBS24",
+                                                                                "SBS42",
+                                                                                "SBS88"),
+                                                      signatures_below_line_grouped = "Mutagenic chemical exposure (22,24,42,88)",
                                                       drivers_to_plot = 10,
                                                       ordered_by_total_weight = F,
                                                       text_font_size = 10,

@@ -8,7 +8,7 @@
 #SBATCH --mem-per-cpu=2000
 #SBATCH --mail-user=vincent.cannataro@yale.edu
 #SBATCH --mail-type=FAIL
-cd UCEC; ~/../../pi/townsend/vlc24/R_source/R-3.6.1/bin/Rscript ../selection_and_pop_level_cluster_submitter.R  -NCI_MAF TCGA.UCEC.mutect.d3fa70be-520a-420e-bb6d-651aeee5cb50.DR-10.0.somatic.maf -tumor_name UCEC -partition general -cov_name UCEC -NCI_skip 5 -cores 8 -mem 14000  -time 120:00:00 -tumor_type_trinuc_sig UCEC; cd ../
+cd UCEC; ~/../../pi/townsend/vlc24/R_source/R-3.6.1/bin/Rscript ../selection_and_pop_level_cluster_submitter.R  -NCI_MAF TCGA.UCEC.mutect.d3fa70be-520a-420e-bb6d-651aeee5cb50.DR-10.0.somatic.maf -tumor_name UCEC -partition general -cov UCEC -NCI_skip 5 -cores 8 -mem 14000  -time 120:00:00 -tumor_type_trinuc_sig UCEC; cd ../
 cd BLCA; ~/../../pi/townsend/vlc24/R_source/R-3.6.1/bin/Rscript ../selection_and_pop_level_cluster_submitter.R -NCI_MAF TCGA.BLCA.mutect.0e239d8f-47b0-4e47-9716-e9ecc87605b9.DR-10.0.somatic.maf -partition general -tumor_name BLCA -NCI_skip 5 -cov bladder -cores 12 -mem 5300 -time 24:00:00 -tumor_type_trinuc_sig BLCA; cd ../
 cd BRCA_ER_neg; ~/../../pi/townsend/vlc24/R_source/R-3.6.1/bin/Rscript ../selection_and_pop_level_cluster_submitter.R -NCI_MAF BRCA_NCI_ER_neg.maf -partition general -tumor_name BRCA_ER_neg -NCI_skip 0 -cov breast -cores 12 -mem 5300 -time 24:00:00 -tumor_type_trinuc_sig BRCA; cd ../
 cd BRCA_ER_pos; ~/../../pi/townsend/vlc24/R_source/R-3.6.1/bin/Rscript ../selection_and_pop_level_cluster_submitter.R -NCI_MAF BRCA_NCI_ER_pos.maf -partition general -tumor_name BRCA_ER_pos -NCI_skip 0 -cov breast -cores 12 -mem 5300 -time 24:00:00 -tumor_type_trinuc_sig BRCA; cd ../

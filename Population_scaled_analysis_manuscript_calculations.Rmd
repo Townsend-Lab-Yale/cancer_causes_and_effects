@@ -11,7 +11,17 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(cancereffectsizeR) # use v2.1.2 
+library(cancereffectsizeR) # use v2.2.0 
+
+#J. Mandell fix for not having to be online to load in ces.refset.hg19 package
+library(GenomeInfoDb)
+# update paths as needed
+ucsc_info = readRDS("input_data/hg19_ucsc_seqinfo_for_GenomeInfoDb.rds")
+ncbi_info = readRDS("input_data/hg19_ncbi_seqinfo_for_GenomeInfoDb.rds")
+assign('hg19', ucsc_info, envir = get(".UCSC_cached_chrom_info", envir = asNamespace('GenomeInfoDb')))
+assign('GCF_000001405.25', ncbi_info, envir = get(".NCBI_cached_chrom_info", envir = asNamespace('GenomeInfoDb')))
+library(ces.refset.hg19)
+
 library(cowplot)
 library(RColorBrewer)
 
@@ -45,12 +55,12 @@ color_vec_fullname["Defective homologous recombination (3)"] <- "#FB8072"
 # Load in data from analyses
 
 ```{r load in input data}
-load("input_data/from_cluster/LUSC__selection_output.RData")
-load("input_data/from_cluster/combined_per_tumor_proportion_scaled_selection.RData")
-load("input_data/from_cluster/LUSC_population_scaled_selection.RData")
-load("input_data/from_cluster/JSD_combined.RData")
-load("input_data/from_cluster/weights_combined.RData")
-load("input_data/from_cluster/combined_substitution_data.RData")
+load("input_data/from_cluster/MP_2_2_0-LUSC__selection_output.RData")
+load("input_data/from_cluster/MP_2_2_0-combined_per_tumor_proportion_scaled_selection.RData")
+load("input_data/from_cluster/MP_2_2_0-LUSC_population_scaled_selection.RData")
+load("input_data/from_cluster/MP_2_2_0-JSD_combined.RData")
+load("input_data/from_cluster/MP_2_2_0-weights_combined.RData")
+load("input_data/from_cluster/MP_2_2_0-combined_substitution_data.RData")
 
 # Some of the TCGA tumors in the "ESCA" dataset are actually ESCC
 per_tumor_data_main <- per_tumor_data_main %>%
@@ -77,11 +87,11 @@ names(total_substitutions)[which(names(total_substitutions)=="ESCA")] <- "ESCA a
 
 ## Load in fig 1 data
 
-Here, we describe the method to calculate the population scaled selection intensity, using LUSC tumor `MDA-1229-T` as an example.
+Here, we describe the method to calculate the population scaled selection intensity, using LUSC tumor `TCGA-98-A53J-01A-11D-A26M-08` as an example.
 
 ```{r load in figure 1 data}
 
-tumor_pick <- "MDA-1229-T"
+tumor_pick <- "TCGA-98-A53J-01A-11D-A26M-08"
 # data(signatures_names_matrix,package = "cancereffectsizeR")
 
 signatures_names_matrix <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
@@ -144,18 +154,20 @@ gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
   hcl(h = hues, l = 65, c = 100)[1:n]
 }
+# 
+# 
+# these_colors <- setNames(
+#   nm = c(pop_scaled_selection_data$variant,
+#          as.character(sig_weights$name)),
+#   gg_color_hue(n = length(c(pop_scaled_selection_data$variant,
+#                             as.character(sig_weights$name)))))
+these_colors <- NULL
 
-
-these_colors <- setNames(
-  nm = c(pop_scaled_selection_data$variant,
-         as.character(sig_weights$name)),
-  gg_color_hue(n = length(c(pop_scaled_selection_data$variant,
-                            as.character(sig_weights$name)))))
-
-
-these_colors["NFE2L2 R34P"] <- "#1b9e77"
-these_colors["OR13G1 L79L"] <- "#e6ab02"
+these_colors["KLF5 E419Q"] <- "#1b9e77"
+these_colors["OR2T34 L163L"] <- "#e6ab02"
 these_colors["TP53 R282W"] <- "#d95f02"
+these_colors[as.character(sig_weights$name)] <- "placeholder"
+
 
 sig_weights %>%
   mutate(name = factor(name,levels = signatures_names_matrix[,"Etiology_sig"])) %>%
@@ -182,7 +194,14 @@ sig_weights %>%
   group_by(name) %>%
   summarize(value = sum(value)) -> sig_weights_named
 
-color_vec_fullname_fig1 <- setNames(object = c(color_vec_fullname["Tobacco (4,29)"],color_vec_fullname["Unknown, clock-like (5)"],color_vec_fullname["Non-actionable and unknown signatures"]),nm = c("Tobacco smoking (4)","Unknown, clock-like (5)","Unknown (8)"))
+
+
+color_vec_fullname_fig1 <- setNames(object = 
+                                      c(color_vec_fullname["Deamination with age, clock-like (1)"],
+                                        color_vec_fullname["APOBEC (2,13)"],
+                                        color_vec_fullname["Unknown, clock-like (5)"],
+                                        color_vec_fullname["Non-actionable and unknown signatures"]),
+                                    nm = c("Deamination with age (1)","APOBEC (2)","Unknown, clock-like (5)","Damage by reactive oxygen species (18)"))
 
 # color_vec_fullname_8 <- c(color_vec_fullname, setNames(object = "black",nm = "Unknown (8)"))
 
@@ -230,36 +249,44 @@ signatures_m$variant <- NA
 
 # lining up variants with their trinucleotide mutation
 
+pop_scaled_selection_data$variant 
 
 
+# Coding mentorship from J. Mandell -> 
+# Let's say you have a vector of coding variants that you want trinuc_muts for:
+my_aac_muts = c("KLF5_E419Q", "OR2T34_L163L", "TP53_R282W")
+# calling select_variants with include_subvariants = T causes SNV records to be returned even when they are part of coding mutations
+# supplying variant_passlist filters results; you could leave out the option to get all annotations on all variant types
+variants = select_variants(cesa = analysis, variant_passlist = my_aac_muts, include_subvariants = T)
+# subset to just the SNV records and you should see trinuc_mut for each, and the all_aac column identifies which coding variant each is associated with.
+snvs = variants[variant_type == "snv"]
+
+snvs %>% unnest(covered_in)
+
+analysis$maf %>% 
+  filter(Unique_Patient_Identifier == "TCGA-98-A53J-01A-11D-A26M-08") -> 
+  this_tumor_maf
+
+snvs[snvs$variant_name %in% this_tumor_maf$variant_id,] %>% 
+  select(gene, trinuc_mut)
+
+```
 
 
-
-## TODO: revisit with trinuc context
-
-# variants_output <- as.data.frame(analysis$variants)
-# 
-# variants_output[grep(pattern = "OR13G1_L79L",x = variants_output$variant_name),]
-# variants_output[grep(pattern = "NFE2L2_R34P",x = variants_output$variant_name),]
-# 
-# selection_output <- as.data.frame(analysis$selection$selection.1)
-# selection_output[grep(pattern = "OR13G1_L79L",x = selection_output$variant_name),]
-# selection_output[grep(pattern = "NFE2L2_R34P",x = selection_output$variant_name),]
-# 
-# analysis@maf[grep(pattern = "NFE2L2_R34P",x = analysis@maf$assoc_aa_mut),trinuc_mut]
-# analysis@maf[grep(pattern = "OR13G1_L79L",x = analysis@maf$assoc_aa_mut),] #  "C[C>A]A" in tumor pick
-# analysis@maf[grep(pattern = "TP53_R282W",x = analysis@maf$assoc_aa_mut),trinuc_mut]
-# 
-
-
-
-signatures_m$variant[which(signatures_m$name == "T[C>G]G")] <- "NFE2L2 R34P"
-signatures_m$variant[which(signatures_m$name == "C[C>A]A")] <- "OR13G1 L79L"
+```{r}
+# my_aac_muts = c("KLF5_E419Q", "OR2T34_L163L", "TP53_R282W")
+signatures_m$variant[which(signatures_m$name == "G[C>T]A")] <- "OR2T34 L163L"
+signatures_m$variant[which(signatures_m$name == "T[C>G]A")] <- "KLF5 E419Q"
 signatures_m$variant[which(signatures_m$name == "C[C>T]G")] <- "TP53 R282W"
 
-variant_levels <- c("TP53 R282W", "NFE2L2 R34P",  "OR13G1 L79L")
-trinuc_levels <- c("C[C>T]G", "T[C>G]G", "C[C>A]A")
-signature_levels <- c("Unknown (8)", "Tobacco smoking (4)", "Unknown, clock-like (5)")
+variant_levels <- c("TP53 R282W", "KLF5 E419Q",  "OR2T34 L163L")
+trinuc_levels <- c("C[C>T]G", "T[C>G]A", "G[C>T]A")
+
+levels(sig_weights_named$name)
+
+# signature_levels <- c("Unknown (8)", "Tobacco smoking (4)", "Unknown, clock-like (5)")
+
+signature_levels <- sig_weights$name
 
 variant_trinuc_names <- setNames(object = variant_levels,nm = trinuc_levels)
 
@@ -269,22 +296,20 @@ variant_trinuc_names <- setNames(object = variant_levels,nm = trinuc_levels)
 
 # setting up our data for the plot
 signatures_m_relevant <- signatures_m[c(grep(x = as.character(signatures_m$name), pattern =  "[C>T]",fixed = T),
-                                        grep(x = as.character(signatures_m$name), pattern =  "[C>G]",fixed = T),
-                                        grep(x = as.character(signatures_m$name), pattern =  "[C>A]",fixed = T)),]
+                                        grep(x = as.character(signatures_m$name), pattern =  "[C>G]",fixed = T)),]
 
 signatures_m_relevant$name <- as.character(signatures_m_relevant$name)
 signatures_m_relevant$name <- factor(
   signatures_m_relevant$name, 
   levels = unique(
     c(grep(x = as.character(signatures_m$name), pattern =  "[C>T]",fixed = T,value = T),
-      grep(x = as.character(signatures_m$name), pattern =  "[C>G]",fixed = T,value=T),
-      grep(x = as.character(signatures_m$name), pattern =  "[C>A]",fixed = T,value=T))))
+      grep(x = as.character(signatures_m$name), pattern =  "[C>G]",fixed = T,value=T))))
 
 
 
 signatures_m_relevant$variant <- factor(signatures_m_relevant$variant,levels = variant_levels)
 
-signatures_m_relevant$cols_to_plot="black"
+signatures_m_relevant$cols_to_plot="bjslack"
 
 
 trinucs_in_plot <- levels(signatures_m_relevant$name)
@@ -335,9 +360,10 @@ signatures_m_relevant_for_legend$variant[3] <- levels(signatures_m_relevant$Sign
 signatures_m_relevant_for_legend$variant <- factor(signatures_m_relevant_for_legend$variant, levels=unique(signatures_m_relevant_for_legend$variant))
 
 
-these_colors["Unknown (8)"] <- color_vec_fullname_fig1["Unknown (8)"]
+these_colors["Deamination with age (1)"] <- color_vec_fullname_fig1["Deamination with age (1)"]
 these_colors["Unknown, clock-like (5)"] <- color_vec_fullname_fig1["Unknown, clock-like (5)"]
-these_colors["Tobacco smoking (4)"] <- color_vec_fullname_fig1["Tobacco smoking (4)"]
+these_colors["APOBEC (2)"] <- color_vec_fullname_fig1["APOBEC (2)"]
+these_colors["Damage by reactive oxygen species (18)"] <- color_vec_fullname_fig1["Damage by reactive oxygen species (18)"]
 
 signature_trinuc_weights_ordered_legend <- ggplot(data = signatures_m_relevant_for_legend, aes(x=name,y=value)) + 
   geom_bar(stat="identity", aes(fill=variant)) + 
@@ -371,7 +397,7 @@ contributed_flux <- population_scaled_selection %>%
   filter(value > 0) %>%
   mutate(signatures = gsub(pattern = "_flux",replacement = "",x = name)) %>%
   group_by(variant) %>%
-  # normalize contrited weight to sum to 1 
+  # normalize contributed weight to sum to 1 
   mutate(value = value / sum(value)) %>% 
   # assign signature etiology 
   mutate(signatures = signatures_names_matrix[as.character(signatures),"Etiology_sig"])
@@ -435,7 +461,7 @@ this_pop_scaled_effect_size <- population_scaled_selection %>%
   mutate(variant = variant_name_extracter(variant)) %>% 
   dplyr::select(variant,Unique_Patient_Identifier,ends_with("_nrsi")) %>%
   pivot_longer(cols = ends_with("nrsi")) %>% 
-  filter(value > 0) %>%
+  # filter(value > 0) %>%
   mutate(signatures = gsub(pattern = "_nrsi",replacement = "",x = name)) %>%
   # group_by(variant) %>%
   # normalize contributed weight to sum to 1 
@@ -565,8 +591,8 @@ ggplot2::ggsave(filename = "output_data/figure_s2_JSD_all.png",plot = JSD_ggplot
 
 ```{r mutation flux setup}
 
-signatures_to_color <- 10
-tumors_in_4x4_plot <- c("OV","READ","HNSC_HPVneg","LGG")
+signatures_to_color <- 15
+tumors_in_4x4_plot <- c("SKCM_primary","COAD","HNSC_HPVneg","THCA")
 
 per_tumor_data_main$tumor_type[per_tumor_data_main$tumor_type=="SKCM_metastasis"] <- "SKCMM"
 per_tumor_data_main$tumor_type[per_tumor_data_main$tumor_type=="SKCM_primary"] <- "SKCMP"
@@ -602,6 +628,12 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
                            round(nrow(these_JSD)/2),
                            round(nrow(these_JSD)/4) + round(nrow(these_JSD)/2), 
                            nrow(these_JSD)),]
+  
+  if(this_tumor_type == "OV") { 
+    
+    these_JSD[5,] <- these_JSD_full[these_JSD_full$Tumor=="TCGA-24-1103-01A-01W-0488-09",]
+  }
+  
   selected_tumors <- c(selected_tumors,these_JSD$Tumor)
 }
 
@@ -630,15 +662,20 @@ top_weights <- weights_combined %>%
 
 sigs_present_ordered <- signatures_names_matrix[signatures_names_matrix[,1] %in% as.vector(as.matrix(signatures_present)),"Etiology_sig"]
 
-# this is random, can rerun to get good colors
-these_colors <- setNames(nm = sigs_present_ordered,(gg_color_hue(n = length(sigs_present_ordered))))
-these_colors[names(these_colors) %in% as.matrix(top_weights[1:signatures_to_color,"signature_name"])] <- gg_color_hue(signatures_to_color)
-these_colors[!names(these_colors) %in% as.matrix(top_weights[1:signatures_to_color,"signature_name"])] <- "gray80"
-these_colors <- c(these_colors,setNames(object = "white",nm = "Other signatures"))
+
+these_colors <- setNames(nm = sigs_present_ordered,rep("red",length(sigs_present_ordered)))
+# these_colors[names(these_colors) %in% as.matrix(top_weights[1:signatures_to_color,"signature_name"])] <- gg_color_hue(signatures_to_color)
+# these_colors[!names(these_colors) %in% as.matrix(top_weights[1:signatures_to_color,"signature_name"])] <- "gray80"
+# these_colors <- c(these_colors,setNames(object = "white",nm = "Other signatures"))
 
 # these_colors <- setNames(nm = sigs_present_ordered,(rainbow(n = length(sigs_present_ordered))))
+
+
+
 signatures_present <- as.matrix(sigs_present_ordered)
 signatures_for_legend <- signatures_present[signatures_present %in% as.matrix(top_weights[1:signatures_to_color,"signature_name"])]
+
+
 signatures_for_legend <- c(signatures_for_legend,"Other signatures")
 
 
@@ -687,14 +724,17 @@ signatures_present_for_plot %>%
   mutate(Signature = 
            forcats::fct_recode(Signature,
                                `Deamination with age, clock-like (1)` = "Deamination with age (1)",
-                                 `Alcohol-associated (16)` = "Unknown (16)")) -> signatures_present_for_plot
+                               `Alcohol-associated (16)` = "Unknown (16)")) -> signatures_present_for_plot
+
+
+signatures_present_for_plot
 
 
 legend_for_plot <-  suppressWarnings(  cowplot::get_legend( ggplot(signatures_present_for_plot, aes(fill=Signature)) + 
-                                           geom_bar(aes(x=xx,y=yy),stat = "identity",color="black") + 
-                                           scale_fill_manual(values = color_vec_fullname,na.value="black") + 
-                                           guides(fill=guide_legend(nrow=2)) +
-                                           theme(legend.position = "bottom")))
+                                                              geom_bar(aes(x=xx,y=yy),stat = "identity",color="black") + 
+                                                              scale_fill_manual(values = c(color_vec_fullname[names(color_vec_fullname) %in% signatures_present_for_plot$Signature],setNames(object = "black",nm = "Other signatures")),na.value="black") + 
+                                                              guides(fill=guide_legend(nrow=2)) +
+                                                              theme(legend.position = "bottom")))
 
 ```
 
@@ -713,8 +753,12 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
   
   
   these_weights <- weights_combined[weights_combined$tumor_type==this_tumor_type,]
-  these_NRSI <- per_tumor_data_main[per_tumor_data_main$tumor_type==this_tumor_type,]
   
+  if(this_tumor_type == "SKCM_primary"){
+    these_NRSI <- per_tumor_data_main[per_tumor_data_main$tumor_type=="SKCMP",]
+  }else{
+  these_NRSI <- per_tumor_data_main[per_tumor_data_main$tumor_type==this_tumor_type,]
+  }
   these_weights <- these_weights[these_weights$Tumor %in% these_NRSI$Unique_Patient_Identifier,]
   
   these_NRSI <- these_NRSI %>% 
@@ -749,7 +793,7 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
   # tied for the lowest, pick a single tumor type for consistency
   if(this_tumor_type == "OV") { 
     
-    these_JSD[5,] <- these_JSD_full[these_JSD_full$Tumor=="TCGA-24-1103",]
+    these_JSD[5,] <- these_JSD_full[these_JSD_full$Tumor=="TCGA-24-1103-01A-01W-0488-09",]
   }
   
   these_weights <- these_weights[these_weights$Tumor %in% these_JSD$Tumor,]
@@ -787,6 +831,11 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
   these_data_nozero <- these_data_nozero %>%
     mutate(bar_label_2 = ifelse(is.na(bar_label),as.character(Signature),paste0(bar_label," by ", Signature))) 
   
+  
+  # these_data_nozero
+  
+  
+  
   these_data_nozero_forplot <- these_data_nozero %>%
     mutate(Signature = signatures_names_matrix[as.character(Signature),"Etiology_sig"]) %>%
     mutate(sig_collapsed = case_when(
@@ -794,14 +843,14 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
       TRUE ~ "Other signatures")
     )
   
-  these_data_nozero_forplot$sig_collapsed <- factor(these_data_nozero_forplot$sig_collapsed, 
-                                                    levels=c(as.character(sigs_present_ordered),"Other signatures"))
+  # these_data_nozero_forplot$sig_collapsed <- factor(these_data_nozero_forplot$sig_collapsed, 
+  #                                                   levels=c(as.character(sigs_present_ordered),"Other signatures"))
   
   
   these_data_nozero_forplot %>%
     mutate(sig_collapsed = 
              forcats::fct_collapse(
-               sig_collapsed,
+               Signature,
                `UV light (7a–d,38)` = c("UV light (7a)",
                                         "UV light (7b)",
                                         "UV light (7c)",
@@ -833,6 +882,13 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
     mutate(data_type = forcats::fct_recode(data_type, 
                                            `Cancer effect weights` = "NRSI weights"))
   
+  these_data_nozero_forplot <- these_data_nozero_forplot %>% 
+    mutate(tumor_factor_lvl = as.numeric(Tumor)) %>% 
+    mutate(Tumor_short = str_sub(Tumor, start = 1,end = 12)) %>%
+    arrange((tumor_factor_lvl)) %>%
+    mutate(Tumor_short = fct_inorder(Tumor_short))
+  
+  
   NRSI_v_weight_plot_ggplot <- 
     ggplot(data = these_data_nozero_forplot,
            aes(x=data_type,
@@ -840,7 +896,7 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
                fill=sig_collapsed,label=bar_label_2)) + 
     geom_bar(stat="identity",color="black") + 
     theme_classic() + 
-    facet_wrap(~ Tumor,nrow=1) + 
+    facet_wrap(~ Tumor_short,nrow=1) + 
     theme(axis.text.x = element_text(angle=90,vjust=0.5,hjust=1)) + 
     labs(y="Proportion of total weight", x= "Type of weight") + 
     scale_fill_manual(values = color_vec_fullname,na.value="black") + 
@@ -852,6 +908,14 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
     mutate(jsd_plotted_tumors = case_when(Tumor %in% these_JSD$Tumor ~ "plotted",
                                           TRUE ~ "not_plotted"))
   
+  plot_title <- this_tumor_type
+  if(this_tumor_type=="HNSC_HPVneg"){
+    plot_title <- "HPV-negative HNSC"
+  }
+  if(this_tumor_type == "SKCM_primary"){
+    plot_title <- "Primary SKCM"
+  }
+  
   JSD_plot_ggplot <- ggplot(these_JSD_full, aes(y=JSD, x=1,label=Tumor)) + 
     geom_boxplot(outlier.alpha = 0) + 
     geom_jitter(data=subset(these_JSD_full,jsd_plotted_tumors=="not_plotted"),width=0.1,height=0,shape=21)  + 
@@ -862,9 +926,7 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
     theme(axis.text.y = element_blank(),
           axis.title.y  = element_blank(),
           axis.ticks.y = element_blank()) + 
-    labs(y="Jensen-Shannon Divergence", title=ifelse(this_tumor_type=="HNSC_HPVneg",
-                                                     "HPV-negative HNSC",
-                                                     this_tumor_type))+ 
+    labs(y="Jensen-Shannon Divergence", title=plot_title)+ 
     theme(plot.title = element_text(hjust = 0.5))
   
   
@@ -1199,7 +1261,7 @@ per_tumor_combined$Signature_long <- factor(per_tumor_combined$Signature_long, l
 
 ```
 
-```{r actionable signatures data analsis}
+```{r actionable signatures data analysis}
 
 
 weights_combined_per_tumor_type <- weights_combined %>%
@@ -1239,7 +1301,7 @@ actionable_signatures <- c("SBS2",
                            "SBS7a","SBS7b","SBS7c","SBS7d",
                            "SBS11","SBS22","SBS24",
                            "SBS16",
-                           "SBS29","SBS31","SBS32","SBS35","SBS38","SBS42")
+                           "SBS29","SBS31","SBS32","SBS35","SBS38","SBS42","SBS88")
 clocklike_signatures <- c("SBS1","SBS5")
 
 
@@ -1447,10 +1509,10 @@ action_weights_m %>%
              
            )
   ) %>% 
-    mutate(Signature = 
-             forcats::fct_recode(Signature,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
-                                 `Alcohol-associated (16)` = "Unknown (16)")) %>% 
+  mutate(Signature = 
+           forcats::fct_recode(Signature,
+                               `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                               `Alcohol-associated (16)` = "Unknown (16)")) %>% 
   group_by(tumor_type,Signature) %>%
   summarize(weight = sum(weight)) -> action_weights_m_collapsed
 
@@ -1495,10 +1557,10 @@ action_effects_m %>%
              
            )
   ) %>% 
-    mutate(Signature = 
-             forcats::fct_recode(Signature,
-                                 `Deamination with age, clock-like (1)` = "Deamination with age (1)",
-                                 `Alcohol-associated (16)` = "Unknown (16)")) %>% 
+  mutate(Signature = 
+           forcats::fct_recode(Signature,
+                               `Deamination with age, clock-like (1)` = "Deamination with age (1)",
+                               `Alcohol-associated (16)` = "Unknown (16)")) %>% 
   group_by(tumor_type,Signature) %>%
   summarize(weight = sum(weight)) -> action_effects_m_collapsed
 
@@ -1591,7 +1653,8 @@ action_effects_m %>%
   filter(Signature %in% c("Deamination with age, clock-like (1)","Unknown, clock-like (5)")) %>%
   group_by(tumor_type) %>%
   summarize(total_aging_effect_weight = sum(weight)) %>%
-  arrange(total_aging_effect_weight)
+  arrange(total_aging_effect_weight) %>% 
+  knitr::kable()
 
 action_effects_m %>% 
   filter(tumor_type == "LGG")
@@ -1609,7 +1672,7 @@ weights_combined_per_tumor_type_unknown %>%
   group_by(tumor_type) %>% 
   summarize(total_unknown = sum(summed_weight_prop)) %>%
   arrange(desc(total_unknown))
-  
+
 
 
 action_effects_m %>%
