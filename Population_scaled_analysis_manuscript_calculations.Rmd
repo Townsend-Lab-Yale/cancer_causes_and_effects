@@ -11,7 +11,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(cancereffectsizeR) # use v2.2.0 
+library(cancereffectsizeR) # used v2.2.0 
 
 #J. Mandell fix for not having to be online to load in ces.refset.hg19 package
 library(GenomeInfoDb)
@@ -826,7 +826,7 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
   
   these_data_nozero$Tumor <- factor(these_data_nozero$Tumor, levels=rev(levels(these_data_nozero$Tumor)))
   
-  these_data_nozero$data_type <- factor(these_data_nozero$data_type, levels=c("signature_weights","NRSI"),labels = c("Signature weights", "NRSI weights"))
+  these_data_nozero$data_type <- factor(these_data_nozero$data_type, levels=c("signature_weights","NRSI"),labels = c("SW", "NRSI weights"))
   
   these_data_nozero <- these_data_nozero %>%
     mutate(bar_label_2 = ifelse(is.na(bar_label),as.character(Signature),paste0(bar_label," by ", Signature))) 
@@ -880,7 +880,7 @@ for(tumor_ind in 1:length(tumors_in_4x4_plot)){
   
   these_data_nozero_forplot <- these_data_nozero_forplot %>%
     mutate(data_type = forcats::fct_recode(data_type, 
-                                           `Cancer effect weights` = "NRSI weights"))
+                                           `CEW` = "NRSI weights"))
   
   these_data_nozero_forplot <- these_data_nozero_forplot %>% 
     mutate(tumor_factor_lvl = as.numeric(Tumor)) %>% 
@@ -955,8 +955,8 @@ four_x_four_plot_w_legend <- cowplot::plot_grid(four_x_four_plot,legend_for_plot
 
 
 cowplot::save_plot(four_x_four_plot_w_legend,filename = "output_data/figure_2_JSD_v_weights_v_effect.png",
-                   base_height = 14,
-                   base_width = 14,
+                   base_height = 12,
+                   base_width = 12,
                    limitsize=F)
 
 four_x_four_plot_w_legend

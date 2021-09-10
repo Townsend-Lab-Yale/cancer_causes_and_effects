@@ -1292,14 +1292,14 @@ x_label <- ggdraw() +
     x = 0.5175,
     angle=0,
     y=0,
-    vjust = 0.5,
+    vjust = 1,
     hjust = 0.5,
     size = 15
   ) +
   theme(
     # add margin on the left of the drawing canvas,
     # so title is aligned with left edge of first plot
-    plot.margin = margin(7, 0, 15, 0)
+    plot.margin = margin(7, 0, 20, 0)
   )
 
 
