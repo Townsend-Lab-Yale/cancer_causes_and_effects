@@ -108,7 +108,8 @@ population_scaled_effect_per_tumor <- function(ces_output, run_name = NULL, min_
   # Handle pre-2.3 prevalence column name
   setnames(selection_data, 'total_maf_freq', 'maf_prevalence', skip_absent = T)
   setnames(selection_data, 'maf_frequency', 'maf_prevalence', skip_absent = T)
-  selection_data = selection_data[maf_prevalence >= min_variant_freq]
+  setnames(selection_data, 'maf_prevalence', 'included_with_variant', skip_absent = T)                                       
+  selection_data = selection_data[included_with_variant >= min_variant_freq]
   
   message("Using variant effect data from ", selection_data[, .N], " variants...")
   
