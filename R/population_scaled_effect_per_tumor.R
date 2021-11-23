@@ -140,7 +140,7 @@ population_scaled_effect_per_tumor <- function(ces_output, run_name = NULL, min_
   
   # Collect SNV IDs: just the variant ID for SNVs; for AACs, pull information from mutation annotations
   selection_data[variant_type == "snv", snv_ids := list(list(variant_id)), by = "variant_id"]
-  selection_data[variant_type == "aac", snv_ids := cesa@mutations$amino_acid_change[variant_id, constituent_snvs, on = 'aac_id']]
+  selection_data[variant_type == "aac", snv_ids := ces_output@mutations$amino_acid_change[variant_id, constituent_snvs, on = 'aac_id']]
   missing_aac_index = selection_data[, bad := is.null(snv_ids[[1]]), by = "variant_id"][bad == T, which = T]
   if (length(missing_aac_index) > 0) {
     missing = selection_data[missing_aac_index, variant]
