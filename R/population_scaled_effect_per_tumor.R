@@ -18,9 +18,14 @@
 #'   ces_variant, specify which run to use by name
 #' @param remove_nonsplice_silent Exclude synonymous coding mutations unless they are near
 #'   splice sites
+#' @param cores The number of cores fed into the parallel::mcmapply function
 #' @return A data table covering all tumors and variants
 
-population_scaled_effect_per_tumor <- function(ces_output, run_name = NULL, min_variant_freq = 2, remove_nonsplice_silent = F) {
+population_scaled_effect_per_tumor <- function(ces_output, 
+                                               run_name = NULL, 
+                                               min_variant_freq = 2, 
+                                               remove_nonsplice_silent = F,
+                                               cores = 1) {
   if (! require("cancereffectsizeR")) {
     stop("Could not load cancereffectsizeR pacakge; is it installed?")
   }
@@ -215,6 +220,12 @@ population_scaled_effect_per_tumor <- function(ces_output, run_name = NULL, min_
     return(snv_output)
   }
   
-  return(rbindlist(mapply(process_snv, variant_snv_pairings$variant, variant_snv_pairings$snv, 
-                          variant_snv_pairings$trinuc_context, variant_snv_pairings$selection_intensity, SIMPLIFY = F)))
+  # Get results from the process_snv function, over cores
+  par_results <- parallel::mcmapply(FUN = process_snv, variant_snv_pairings$variant, variant_snv_pairings$snv, 
+                                    variant_snv_pairings$trinuc_context, variant_snv_pairings$selection_intensity, SIMPLIFY = F,
+                                    mc.cores = cores)
+  
+  
+  return(rbindlist(par_results))
+  
 }
