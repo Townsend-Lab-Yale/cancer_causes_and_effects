@@ -77,6 +77,7 @@ fig1_attributable_effectsize_stacked_nolegend
 # fig1_legend
 
 
+# +Figure1 combine ---- 
 fig1a <- cowplot::plot_grid(fig1_trinuc_definitions,labels = "A")
 fig1bc <- cowplot::plot_grid(fig1_signatures_in_tumor,fig1_contributions,ncol = 2,labels = c("B","C"))
 
@@ -92,6 +93,11 @@ fig1_abcdef_legend <- cowplot::plot_grid(fig1_abcdef,fig1_legend,rel_heights = c
 
 cowplot::save_plot(fig1_abcdef_legend,filename = "manuscript_analysis_bootstrap/figures/fig1.png",
                    base_height = 16,base_width = 16)
+
+
+
+
+# figure 2 ----- 
 
 
 

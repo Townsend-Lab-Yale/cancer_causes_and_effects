@@ -35,3 +35,27 @@ write.table(x = our_esca_tumors,file = "dev/our_esca_tumors.csv",quote = F,row.n
 # esca_read_test <- read.csv(file = "dev/our_esca_tumors.csv")
 
 
+tcga_esca_clin_code
+
+tcga_esca$short_barcode <- substr(x = tcga_esca$Tumor_Sample_Barcode,start = 1,stop = 15)
+
+tcga_esca_esca <- tcga_esca[tcga_esca$short_barcode %in% tcga_esca_clin_code$CASE_ID[tcga_esca_clin_code$ONCOTREE_CODE=="ESCA"],]
+tcga_esca_escc <- tcga_esca[tcga_esca$short_barcode %in% tcga_esca_clin_code$CASE_ID[tcga_esca_clin_code$ONCOTREE_CODE=="ESCC"],]
+
+write_delim(x = tcga_esca_esca, file = "dev/ESCA/TCGA_ESCA_just_esca.tsv")
+write_delim(x = tcga_esca_escc, file = "dev/ESCA/TCGA_ESCA_just_escc.tsv")
+
+
+
+tcga_esca <- preload_maf(maf = tcga_esca_esca,refset = "ces.refset.hg19",chain_file = "dev/hg38ToHg19.over.chain")
+tcga_escc <- preload_maf(maf = tcga_esca_escc,refset = "ces.refset.hg19",chain_file = "dev/hg38ToHg19.over.chain")
+
+
+saveRDS(object = tcga_esca, file = "dev/combine_test/ESCA/tcga_esca.rds")
+saveRDS(object = tcga_escc, file = "dev/combine_test/ESCA/tcga_escc.rds")
+
+
+save(object = tcga_esca, file = "dev/combine_test/ESCA/tcga_esca.RData")
+save(object = tcga_escc, file = "dev/combine_test/ESCA/tcga_escc.RData")
+
+

@@ -57,7 +57,8 @@ sig_context_long <- sig_context_long %>%
   mutate(facet_labels = case_when(
     sig_names == "SBS1" ~ "Deamination with age (1)", 
     sig_names == "SBS2" ~ "APOBEC (2)", 
-    sig_names == "SBS5" ~ "Unknown, clock-like (5)"
+    sig_names == "SBS5" ~ "Unknown, clock-like (5)",
+    sig_names == "SBS4" ~ "Tobacco (4)"
     ))
 
 
@@ -89,7 +90,7 @@ sig_context_long %>%
   ggplot(aes(x=trinuc,y=weight,fill=sig_names)) + 
   geom_col(aes(color=trinuc)) +
   scale_color_manual(values = trinuc_colors) + 
-  facet_wrap(~facet_labels,nrow=3,scales = "free_y") + 
+  facet_wrap(~facet_labels,nrow=4,scales = "free_y") + 
   theme_classic() + 
   scale_fill_manual(values = color_vec_sbs,limits=force) + 
   guides(fill="none",color="none") + 
