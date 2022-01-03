@@ -123,7 +123,7 @@ color_vec_fig1 <- color_vec[!names(color_vec) %in% c("Prior treatment (11,31,32,
 ggplot(mean_attributable_effect, aes(fill=signature_process)) + 
   geom_bar(aes(x=1,y=avg_weight),stat="identity") + 
   scale_fill_manual(values=color_vec_fig1) + 
-  labs(y="Average attributable effect size\n among bootstrap samples",x=NULL,fill="Signature") + 
+  labs(y="Average attributable effect size\n among bootstrap samples",x=NULL,fill="") + 
   theme_classic() + 
   theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank()) + 

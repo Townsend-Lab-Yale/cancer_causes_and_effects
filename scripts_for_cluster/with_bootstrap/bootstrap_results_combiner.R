@@ -25,6 +25,10 @@ tumor_name <- parameters_for_run %>%
 trinuc_files <- dir(path = "bootstrap_analysis",pattern = "trinuc_storage_[0-9]",recursive = T,full.names = T)
 attribution_files <- dir(path = "bootstrap_analysis",pattern = "attribution_storage_[0-9]",recursive = T,full.names = T)
 
+## For development
+# trinuc_files <- trinuc_files[stringr::str_detect(string = trinuc_files,pattern = "HPVneg")]
+# attribution_files <- attribution_files[stringr::str_detect(string = attribution_files,pattern = "HPVneg")]
+
 trinuc_storage <- vector(mode = "list",length = 1000)
 attribution_storage <- vector(mode = "list", length = 1000)
 
@@ -141,12 +145,13 @@ for(tumor_ind in seq_along(jsd_storage_list)){
 
 
 
-# this_tumor <- jsd_storage_list$`MDA-1006-T` # debug 
+# this_tumor <- jsd_storage_list$`MDA-1006-T` # debug
+# this_tumor <- jsd_storage_list$`TCGA-D6-6516-01A-11D-1870-08` # debug
 options(dplyr.summarise.inform = FALSE)
 
-jsd_per_tumor <- function(this_tumor){
+jsd_per_tumor <- function(this_tumor, jsd_output = TRUE, boot_sample = NULL){
   
-  tumor_name <- this_tumor$trinuc$Unique_Patient_Identifier[1]
+  tumor_ID <- this_tumor$trinuc$Unique_Patient_Identifier[1]
   
   # trinuc_long <- this_tumor$trinuc %>%
   #   select(-Unique_Patient_Identifier,-ends_with("_snvs"),-group_avg_blended) %>%
@@ -166,7 +171,7 @@ jsd_per_tumor <- function(this_tumor){
     mutate(signature_merged = as.factor(signature)) %>%
     mutate(signature_merged = forcats::fct_collapse(
       signature_merged, 
-      `SBS7` = c("SBS7a","SBS7b","SBS7c","SBS7d"),
+      `SBS7_38` = c("SBS7a","SBS7b","SBS7c","SBS7d","SBS38"),
       `SBS2_13` = c("SBS2","SBS13"),
       `SBS4_29` = c("SBS4","SBS29"),
       `SBStreatment` = c("SBS11","SBS31","SBS32","SBS35"),
@@ -174,7 +179,10 @@ jsd_per_tumor <- function(this_tumor){
     select(-signature) %>%
     group_by(bootstrap_sample,signature_merged) %>%
     summarize(weight = sum(weight)) %>%
-    ungroup() %>%
+    ungroup() -> 
+    trinuc_long 
+  
+  trinuc_long %>%
     pivot_wider(names_from = signature_merged, values_from = weight) %>%
     select(-bootstrap_sample) -> 
     trinuc_wide
@@ -194,7 +202,7 @@ jsd_per_tumor <- function(this_tumor){
     mutate(signature_merged = suppressWarnings(
       forcats::fct_collapse(
         signature_merged, 
-        `SBS7` = c("SBS7a","SBS7b","SBS7c","SBS7d"),
+        `SBS7_38` = c("SBS7a","SBS7b","SBS7c","SBS7d","SBS38"),
         `SBS2_13` = c("SBS2","SBS13"),
         `SBS4_29` = c("SBS4","SBS29"),
         `SBStreatment` = c("SBS11","SBS31","SBS32","SBS35"),
@@ -221,7 +229,7 @@ jsd_per_tumor <- function(this_tumor){
   trinuc_wide <- trinuc_wide %>%
     select(all_of(SBS_in_nrsi))
   
- 
+  
   
   trinuc_wide <- as.matrix(trinuc_wide)
   attribute_wide <- as.matrix(attribute_wide)
@@ -234,7 +242,38 @@ jsd_per_tumor <- function(this_tumor){
     
   }
   
-  return(jsd_storage)
+  # if this is running in the JSD apply, return jsd,
+  # else, we will use this for pulling out fig2 data
+  if(jsd_output){
+    return(jsd_storage)
+  }else{
+    
+    trinuc_long_justboot <- trinuc_long %>% filter(bootstrap_sample == boot_sample) %>%
+      mutate(tumor_ID = tumor_ID) %>% 
+      mutate(tumor_type = tumor_name) %>%
+      dplyr::rename(signature = signature_merged) %>%
+      mutate(data_type = "trinuc_weight")
+    
+    
+    
+    
+    attribute_long_justboot <- attribute_long %>% filter(bootstrap_sample == boot_sample) %>%
+      mutate(tumor_ID = tumor_ID) %>% 
+      mutate(tumor_type = tumor_name) %>%
+      dplyr::rename(weight = proportion_weight) %>%
+      select(-total_weight) %>%
+      mutate(data_type = "attribution_weight")
+    
+    
+    return(rbind(trinuc_long_justboot,attribute_long_justboot))
+    
+    
+  }
+  
+  
+  
+  
+  
 }
 
 # jsd_per_tumor(this_tumor = jsd_storage_list$`MDA-1006-T`)
@@ -246,25 +285,81 @@ jsd_results <- parallel::mclapply(X = jsd_storage_list,FUN = jsd_per_tumor,mc.co
 saveRDS(object = jsd_results, file = paste0("bootstrap_analysis/JSD_results_",tumor_name,".rds"))
 
 purrr::map_dfr(jsd_results,median) %>%
-  pivot_longer(everything(),names_to = "tumor_name",values_to = "median_JSD") %>%
+  pivot_longer(everything(),names_to = "tumor_ID",values_to = "median_JSD") %>%
   mutate(tumor_type = tumor_name) -> 
   median_jsd
 
 
 saveRDS(object = median_jsd, file = paste0("bootstrap_analysis/JSD_results_median_",tumor_name,".rds"))
 
-# jsd_results$`TCGA-O2-A5IB-01A-11D-A27K-08`
-# 
-# 
-# jsd_results_mat <- do.call(rbind,jsd_results)
 
-# jsd_results_mat[1:10,] %>%
-#   as_tibble() %>%
-#   mutate(tumor_name = rownames(jsd_results_mat)[1:10]) %>%
-#   pivot_longer(cols = -tumor_name) %>%
-#   ggplot(aes(x=tumor_name, y=value)) +
-#   geom_jitter(height = 0,width = 0.3,alpha=0.5) +
-#   theme_bw() +
-#   labs(y= "JSD")
+
+# saved from fig2*.R script after analyzing above JSD values. 
+median_quantiles_df <- readRDS("../tumors_for_JSD_plot.rds")
+# median_quantiles_df <- readRDS("scripts_for_cluster/with_bootstrap/tumors_for_JSD_plot.rds") # for dev
+
+if(tumor_name %in% median_quantiles_df$tumor_type){
+  
+  these_tumors <- median_quantiles_df %>%
+    filter(tumor_type == tumor_name) %>%
+    pull(tumor_ID)
+  
+  # find median JSD 
+  
+  jsd_subset <- jsd_results[names(jsd_results) %in% these_tumors]
+  
+  median_quantiles_df_tumor_type <- median_quantiles_df %>%
+    filter(tumor_type == tumor_name) %>%
+    mutate(median_bootstrap_sample = as.numeric(NA)) # fill in the median JSD among bootstraps for this tumor type. 
+  
+  
+  for(tumor_ind in 1:nrow(median_quantiles_df_tumor_type)){
+    
+    these_JSD <- as.vector(jsd_subset[median_quantiles_df_tumor_type$tumor_ID[tumor_ind]] )[[1]]
+    
+    jsd_tib <- tibble(jsd_val = these_JSD) %>%
+      mutate(bootstrap_sample = 1:nrow(.)) %>%
+      arrange(desc(jsd_val))
+    
+    
+    # pull out the median bootstrap value 
+    median_quantiles_df_tumor_type$median_bootstrap_sample[tumor_ind] <- jsd_tib[nrow(jsd_tib)/2,] %>%
+      pull(bootstrap_sample)
+    
+  }
+  
+  
+  fig2_data_list <- vector(mode = "list",length = nrow(median_quantiles_df_tumor_type))
+  
+  for(tumor_ind in 1:nrow(median_quantiles_df_tumor_type)){
+    
+    this_tumor_ID <- median_quantiles_df_tumor_type[tumor_ind,"tumor_ID"] %>% pull()
+    
+    
+    fig2_data_list[[tumor_ind]] <- jsd_per_tumor(this_tumor = jsd_storage_list[[this_tumor_ID]],
+                                                 jsd_output = FALSE,
+                                                 boot_sample = 
+                                                   median_quantiles_df_tumor_type[tumor_ind,"median_bootstrap_sample"] %>% 
+                                                   pull()
+    )
+    
+    
+    
+    
+    
+    
+  }
+  
+  fig2_data <- data.table::rbindlist(fig2_data_list)
+  
+  saveRDS(object = fig2_data, file = paste0("bootstrap_analysis/fig2_data_",tumor_name,".rds"))
+  
+  
+}
+
+
+
+
+
 
 
