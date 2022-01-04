@@ -147,6 +147,166 @@ cowplot::save_plot(plot = fig2_all_w_legend,
 
 
 
+# figure 3 -----
+
+# files from fig3_attributions_gather.R
+fig3_data_gathered <- readRDS("bootstrap_analysis/fig3_data_gathered.rds")
+fig3_trinuc_data_gathered <- readRDS("bootstrap_analysis/fig3_data_trinuc_gathered.rds")
+
+
+source("manuscript_analysis_bootstrap/R/fig3_plots_create.R")
+
+fig3_sub_heights <- c(1.5,5)
+
+fig3a1 <- avg_signature_plotter(tumor_type = "LUAD",sig_of_focus = "Tobacco (4,29)",plot_title = "LUAD")
+fig3a2 <- variant_attribution_plotter(tumor_type = "LUAD",sig_of_focus = "Tobacco (4,29)")
+fig3a <- cowplot::plot_grid(fig3a1,fig3a2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+fig3b1 <- avg_signature_plotter(tumor_type = "LUSC",sig_of_focus = "Tobacco (4,29)",plot_title = "LUSC")
+fig3b2 <- variant_attribution_plotter(tumor_type = "LUSC",sig_of_focus = "Tobacco (4,29)")
+fig3b <- cowplot::plot_grid(fig3b1,fig3b2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+fig3c1 <- avg_signature_plotter(tumor_type = "SKCMP",sig_of_focus = "UV light (7a–d,38)",plot_title = "Primary SKCM")
+fig3c2 <- variant_attribution_plotter(tumor_type = "SKCMP",sig_of_focus = "UV light (7a–d,38)")
+fig3c <- cowplot::plot_grid(fig3c1,fig3c2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+
+fig3d1 <- avg_signature_plotter(tumor_type = "LIHC",sig_of_focus = "Mutagenic chemical exposure (22,24,42,88)",
+                                plot_title = "LIHC")
+fig3d2 <- variant_attribution_plotter(tumor_type = "LIHC",sig_of_focus = "Mutagenic chemical exposure (22,24,42,88)")
+fig3d <- cowplot::plot_grid(fig3d1,fig3d2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+
+fig3e1 <- avg_signature_plotter(tumor_type = "BLCA",sig_of_focus = "APOBEC (2,13)",plot_title = "BLCA")
+fig3e2 <- variant_attribution_plotter(tumor_type = "BLCA",sig_of_focus = "APOBEC (2,13)")
+fig3e <- cowplot::plot_grid(fig3e1,fig3e2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+fig3f1 <- avg_signature_plotter(tumor_type = "CESC",sig_of_focus = "APOBEC (2,13)",plot_title = "CESC")
+fig3f2 <- variant_attribution_plotter(tumor_type = "CESC",sig_of_focus = "APOBEC (2,13)")
+fig3f <- cowplot::plot_grid(fig3f1,fig3f2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+
+fig3g1 <- avg_signature_plotter(tumor_type = "HNSC_HPVneg",sig_of_focus = "APOBEC (2,13)",plot_title = "HPV-negative HNSC")
+fig3g2 <- variant_attribution_plotter(tumor_type = "HNSC_HPVneg",sig_of_focus = "APOBEC (2,13)")
+fig3g <- cowplot::plot_grid(fig3g1,fig3g2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+
+fig3h1 <- avg_signature_plotter(tumor_type = "HNSC_HPVpos",sig_of_focus = "APOBEC (2,13)",plot_title = "HPV-positive HNSC")
+fig3h2 <- variant_attribution_plotter(tumor_type = "HNSC_HPVpos",sig_of_focus = "APOBEC (2,13)")
+fig3h <- cowplot::plot_grid(fig3h1,fig3h2,nrow=2,rel_heights = fig3_sub_heights,align = "v")
+
+
+fig3 <- cowplot::plot_grid(fig3a,
+                   fig3b,
+                   fig3c,
+                   fig3d,
+                   fig3e,
+                   fig3f,
+                   fig3g,
+                   fig3h,nrow=2,align = "hv",labels = "AUTO")
+
+# cowplot::save_plot(plot = fig3, filename = "manuscript_analysis_bootstrap/figures/fig3.png",base_height = 7.5,base_width = 13)
+
+
+# +figure3 legend ----- 
+test_colors$object <- factor(test_colors$object, levels = test_colors$object)
+ggplot(test_colors[4:13,], aes(x=object,y=1,fill=object)) +
+  geom_col() +
+  scale_fill_manual(values = color_vec,limits=force) +
+  theme_classic() + 
+  labs(fill="") + 
+  guides(fill=guide_legend(nrow=2)) +
+  theme(legend.position = "bottom") -> 
+  fig3_ggplotlegend
+
+fig3_legend <- suppressWarnings(cowplot::get_legend(fig3_ggplotlegend))
+
+
+
+
+y_label <- ggdraw() +
+  draw_label(
+    "Variant",
+    fontface = 'bold',
+    x = 0,
+    angle=90,
+    y=0.5,
+    vjust = 0.5,
+    hjust = 0.5,
+    size = 15
+  ) +
+  theme(
+    # add margin on the left of the drawing canvas,
+    # so title is aligned with left edge of first plot
+    plot.margin = margin(0, 0, 0, 7)
+  )
+
+x_label <- ggdraw() +
+  draw_label(
+    "Proportion of mutational weight or cancer effect attributable to each mutational process",
+    fontface = 'bold',
+    x = 0.5175,
+    angle=0,
+    y=0,
+    vjust = 1,
+    hjust = 0.5,
+    size = 15
+  ) +
+  theme(
+    # add margin on the left of the drawing canvas,
+    # so title is aligned with left edge of first plot
+    plot.margin = margin(7, 0, 20, 0)
+  )
+
+
+
+fig3_w_lab <- plot_grid(
+  y_label, fig3,
+  ncol = 2,
+  # rel_heights values control vertical title margins
+  rel_widths = c(0.015, 1)
+)
+
+
+fig3_w_lab <- plot_grid(
+  fig3_w_lab, x_label,
+  nrow = 2,
+  # rel_heights values control vertical title margins
+  rel_heights = c(1, 0.035)
+)
+
+
+fig3_w_legend <- plot_grid(fig3_legend,fig3_w_lab, ncol=1,rel_heights = c(0.1,1))
+
+
+cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstrap/figures/fig3.png",base_height = 7.5,base_width = 13)
+
+
+
+
+
+# variant_attribution_plotter(tumor_type = "LUAD",sig_of_focus = "Tobacco (4,29)")
+# variant_attribution_plotter(tumor_type = "LUSC",sig_of_focus = "Tobacco (4,29)")
+# variant_attribution_plotter(tumor_type = "SKCMP",sig_of_focus = "UV light (7a–d,38)")
+# variant_attribution_plotter(tumor_type = "LIHC",sig_of_focus = "Mutagenic chemical exposure (22,24,42,88)")
+# variant_attribution_plotter(tumor_type = "BLCA",sig_of_focus = "APOBEC (2,13)")
+# variant_attribution_plotter(tumor_type = "CESC",sig_of_focus = "APOBEC (2,13)")
+# variant_attribution_plotter(tumor_type = "HNSC_HPVneg",sig_of_focus = "APOBEC (2,13)")
+# variant_attribution_plotter(tumor_type = "HNSC_HPVpos",sig_of_focus = "APOBEC (2,13)")
+# 
+# 
+# 
+# avg_signature_plotter(tumor_type = "HNSC_HPVpos",sig_of_focus = "APOBEC (2,13)",plot_title = "HNSC HPV negative")
+# 
+
+
+
+
+
+
+
+
+
 
 
 
