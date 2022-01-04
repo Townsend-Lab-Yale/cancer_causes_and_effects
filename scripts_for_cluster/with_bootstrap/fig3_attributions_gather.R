@@ -45,7 +45,7 @@ for( file_ind in seq_along(files_names)){
   attributions_all_variants <- these_attributions %>%
     select(-ends_with("flux")) %>%
     pivot_longer(cols = starts_with("SBS"),names_to = "signature",values_to = "weight") %>%
-    filter(weight > 0) %>%
+    # filter(weight > 0) %>%
     group_by(bootstrap_sample,Unique_Patient_Identifier) %>%
     mutate(proportional_weight = weight / sum(weight)) %>%
     group_by(bootstrap_sample,variant,signature) %>%

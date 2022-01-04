@@ -284,39 +284,26 @@ cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstr
 
 
 
-
-# variant_attribution_plotter(tumor_type = "LUAD",sig_of_focus = "Tobacco (4,29)")
-# variant_attribution_plotter(tumor_type = "LUSC",sig_of_focus = "Tobacco (4,29)")
-# variant_attribution_plotter(tumor_type = "SKCMP",sig_of_focus = "UV light (7a–d,38)")
-# variant_attribution_plotter(tumor_type = "LIHC",sig_of_focus = "Mutagenic chemical exposure (22,24,42,88)")
-# variant_attribution_plotter(tumor_type = "BLCA",sig_of_focus = "APOBEC (2,13)")
-# variant_attribution_plotter(tumor_type = "CESC",sig_of_focus = "APOBEC (2,13)")
-# variant_attribution_plotter(tumor_type = "HNSC_HPVneg",sig_of_focus = "APOBEC (2,13)")
-# variant_attribution_plotter(tumor_type = "HNSC_HPVpos",sig_of_focus = "APOBEC (2,13)")
-# 
-# 
-# 
-# avg_signature_plotter(tumor_type = "HNSC_HPVpos",sig_of_focus = "APOBEC (2,13)",plot_title = "HNSC HPV negative")
-# 
+# figure 4 ------ 
 
 
+fig4_data <- readRDS(file = "bootstrap_analysis/fig_4_storage.rds")
+fig4_ucec <- readRDS(file = "bootstrap_analysis/fig_4_storage_UCEC.rds")
 
+source("manuscript_analysis_bootstrap/R/fig4_dotplot.R")
 
+fig4dotplot
 
+source("manuscript_analysis_bootstrap/R/fig4_barplots.R")
 
+fig4_bars <- cowplot::plot_grid(weight_plot, axis_text, effect_plot + guides(fill="none"),
+                                nrow = 1,rel_widths = c(1,.6,1,.5),align = "h",labels = c("B","","C"))
 
+fig4_bars_w_legend <- cowplot::plot_grid(fig4_bars,effects_legend,nrow = ,rel_widths = c(1,.5))
 
+fig4 <- cowplot::plot_grid(fig4dotplot,fig4_bars_w_legend,nrow = 2,rel_heights = c(1,1),labels = c("A",""))
 
-
-
-
-
-
-
-
-
-
-
+cowplot::save_plot(plot = fig4,filename = "manuscript_analysis_bootstrap/figures/fig4.png",base_height = 12,base_width = 9)
 
 
 
