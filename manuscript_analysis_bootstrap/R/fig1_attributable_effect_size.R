@@ -1,15 +1,15 @@
 
 # attributable effect size
 
-lusc_attribution_rbind %>% #from fig1_sig_contributed_to_variant.R
-  filter(Unique_Patient_Identifier == "TCGA-98-A53J-01A-11D-A26M-08") %>%
-  select(-ends_with("_flux"),-Unique_Patient_Identifier) %>%
-  pivot_longer(cols = ends_with("nrsi"),names_to = "signature",values_to = "weight") %>% 
-  group_by(bootstrap_sample) %>%
-  mutate(weight_prop = weight / sum(weight)) %>% 
-  ungroup() %>%
-  mutate(variant_name = variant_name_extracter(variant)) -> 
-  lusc_attributable_ES_long
+# lusc_attribution_rbind %>% #from fig1_sig_contributed_to_variant.R
+#   filter(Unique_Patient_Identifier == "TCGA-98-A53J-01A-11D-A26M-08") %>%
+#   select(-ends_with("_flux"),-Unique_Patient_Identifier) %>%
+#   pivot_longer(cols = ends_with("nrsi"),names_to = "signature",values_to = "weight") %>% 
+#   group_by(bootstrap_sample) %>%
+#   mutate(weight_prop = weight / sum(weight)) %>% 
+#   ungroup() %>%
+#   mutate(variant_name = variant_name_extracter(variant)) -> 
+#   lusc_attributable_ES_long
 
 
 lusc_attributable_ES_long$variant_name <- factor(lusc_attributable_ES_long$variant_name, levels = c("TP53 R282W",
@@ -127,9 +127,9 @@ ggplot(mean_attributable_effect, aes(fill=signature_process)) +
   theme_classic() + 
   theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank()) + 
-  guides(fill=guide_legend(nrow=2)) +
+  guides(fill=guide_legend(nrow=4)) +
   theme(legend.position = "bottom")  +
-  theme(text = element_text(size = plot_text_size))-> 
+  theme(text = element_text(size = plot_text_size+4))-> 
   gg_for_legend
 
 fig1_legend <- suppressWarnings(cowplot::get_legend(gg_for_legend))

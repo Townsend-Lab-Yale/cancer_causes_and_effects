@@ -5,16 +5,35 @@
 fig4_data_df <- rbindlist(fig4_data,idcol = "tumor_type")
 
 fig4_data_df <- rbind(fig4_data_df,fig4_ucec[[1]] %>% mutate(tumor_type ="UCEC"))
+# 
+# fig4_data_df %>% 
+#   group_by(tumor_type,signature) %>% 
+#   summarize(total_weight = sum(weight)) %>% 
+#   filter(total_weight == 0) -> 
+#   to_drop
+# 
+# fig4_data_df <- anti_join(x = fig4_data_df,y = to_drop,by = c("tumor_type","signature"))
+
+# just samples with 30 or more >0 incidence per tumor type for stats
 
 fig4_data_df %>% 
-  group_by(tumor_type,signature) %>% 
-  summarize(total_weight = sum(weight)) %>% 
-  filter(total_weight == 0) -> 
-  to_drop
+  filter(data_type == "trinuc") %>% 
+  filter(weight > 0) %>%
+  # group_by(tumor_type, signature) %>%
+  count(tumor_type, signature) %>%
+  filter(n<30) -> 
+  not_enough_samples
+  
+fig4_data_df <- anti_join(x = fig4_data_df, y = not_enough_samples, by=c("tumor_type","signature"))
 
-fig4_data_df <- anti_join(x = fig4_data_df,y = to_drop,by = c("tumor_type","signature"))
+fig4_data_df %>%
+  filter((data_type == "trinuc" & weight == 0)) -> 
+  no_weight
+
+fig4_data_df <- anti_join(x = fig4_data_df, y = no_weight, by=c("Unique_Patient_Identifier","signature"))
 
 fig4_stats <- fig4_data_df %>% 
+  # filter(!Unique_Patient_Identifier %in% no_weight) %>%
   group_by(tumor_type, signature) %>% 
   summarize(results = list(broom::tidy(wilcox.test(weight ~ data_type, paired=T)))) %>% 
   unnest(cols = c(results)) %>% 
@@ -24,7 +43,12 @@ fig4_stats <- fig4_data_df %>%
 
 weight_and_effect_data <- fig4_data_df %>% 
   group_by(tumor_type, signature, data_type) %>%
-  summarize(mean_weight = mean(weight)) 
+  summarize(mean_weight = mean(weight), 
+            lower_conf = Rmisc::CI(weight)['lower'], 
+            upper_conf = Rmisc::CI(weight)['upper'])
+
+
+weight_and_effect_data_forSuppTable <- weight_and_effect_data
   
 weight_and_effect_data$significant <- NA
 
@@ -89,5 +113,34 @@ fig4dotplot <- ggplot() +
 
 
 
+
+
+# weight_and_effect_data
+
+
+# fig4_data_df %>% 
+#   group_by(tumor_type, signature,data_type) %>%
+#   summarize(mean_weight = mean(weight), 
+#             lower_conf = Rmisc::CI(weight)['lower'], 
+#             upper_conf = Rmisc::CI(weight)['upper'])
+  
+
+
+
+
+
+
+
+
+weight_and_effect_data_forSuppTable <- weight_and_effect_data_forSuppTable %>% 
+  ungroup() %>%
+  mutate(data_type = case_when(
+    data_type == "trinuc" ~ "Proportional signature weight", 
+    data_type == "effectsize" ~ "Cancer effect weight")) %>%
+  # pivot_wider(values_from = c("mean_weight","lower_conf","upper_conf"),names_from = data_type) %>%
+  # dplyr::rename(
+  #   mean_effectsize_weight = effectsize,
+  #   mean_trinuc_weight = trinuc) %>% 
+  left_join(fig4_stats, by=c("tumor_type","signature"))
 
 

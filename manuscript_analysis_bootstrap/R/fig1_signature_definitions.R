@@ -43,7 +43,7 @@ weight_summary %>%
 # 2:   KLF5    T[C>G]A
 # 3:   TP53    C[C>T]G
 
-sig_context <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
+sig_context <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.2")
 sig_context <- sig_context$signatures[signatures_to_plot,]
 
 # just want contexts relevant to our variants for the figure

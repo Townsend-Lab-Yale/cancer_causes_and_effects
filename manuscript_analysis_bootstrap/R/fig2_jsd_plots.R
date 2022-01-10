@@ -76,7 +76,8 @@ for(tumor_ind in seq_along(jsd_boxplots)){
           axis.title.y = element_blank()) + 
     labs(x="Jensen-Shannon Divergence", 
          title= this_median_jsd$tumor_type_label[1]) + 
-    theme(plot.title = element_text(hjust = 0.5)) -> 
+    theme(plot.title = element_text(hjust = 0.5),
+          text = element_text(size = plot_text_size)) -> 
     jsd_boxplots[[tumor_ind]]
   
   
@@ -100,6 +101,21 @@ all_data_for_figure2 <- all_data_for_figure2 %>%
 data_for_figure2 <- all_data_for_figure2 %>%
   filter(tumor_type %in% tumors_in_plot)
 
+
+data_for_figure2 %>% 
+  filter(stringr::str_detect(string = tumor_ID , pattern = "EB-A82B")) %>% 
+  arrange(desc(weight)) %>% 
+  filter(signature == "SBS1") %>%
+  # filter(data_type == "trinuc_weight") %>%
+  pull(weight)
+
+
+data_for_figure2 %>% 
+  filter(stringr::str_detect(string = tumor_ID , pattern = "EB-A82B")) %>% 
+  arrange(desc(weight)) %>%
+  filter(signature %in% c("SBS5","SBS7_38")) %>%
+  filter(data_type == "attribution_weight") 
+  # pull(weight)
 
 
 jsd_barplots <- vector(mode = "list", length = length(tumors_in_plot))
@@ -131,6 +147,8 @@ for(tumor_ind in seq_along(tumors_in_plot)){
       data_type == "trinuc_weight" ~ "SW",
       data_type == "attribution_weight" ~ "CEW")) %>%
   mutate(x_labels_text = factor(x_labels_text,levels=c("SW","CEW")))
+  
+  
   ggplot(these_fig2_data, 
          aes(x=x_labels_text,y=weight,fill = sig_label)) + 
     geom_bar(stat = "identity",color="black") + 
@@ -138,7 +156,9 @@ for(tumor_ind in seq_along(tumors_in_plot)){
     facet_wrap(~tumor_ID_sub,nrow=1) + 
     scale_fill_manual(values = color_vec,limits=force) + 
     guides(fill = "none") + 
-    labs(y="Proportion of total weight", x="Type of weight") -> 
+    labs(y="Proportion of total weight", x="Type of weight") + 
+    theme(text = element_text(size = plot_text_size),
+          strip.text.x = element_text(size = plot_text_size-strip_text_smaller)) -> 
     jsd_barplots[[tumor_ind]] 
   
   
@@ -157,9 +177,10 @@ signatures_shown %>%
   ggplot(aes(x=tumor_type,y=weight,fill=sig_label)) + 
   geom_bar(stat="identity", color="black") + 
   scale_fill_manual(values=color_vec,limits=force) + 
-  guides(fill=guide_legend(nrow=2)) +
+  guides(fill=guide_legend(nrow=3)) +
   theme(legend.position = "bottom") + 
-  labs(fill = "") -> 
+  labs(fill = "") + 
+  theme(text = element_text(size = plot_text_size))-> 
   fig2_legend
 
 fig2_legend <- suppressWarnings(cowplot::get_legend(fig2_legend))

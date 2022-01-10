@@ -3,14 +3,8 @@
 # script to visualize the probability each source contributed to each tumor
 
 
-lusc_attribution_rbind <- rbindlist(lusc_attribution_results,idcol = "bootstrap_sample")
 
 
-lusc_attribution_rbind %>%
-  filter(Unique_Patient_Identifier == "TCGA-98-A53J-01A-11D-A26M-08") %>%
-  select(-ends_with("_nrsi"),-Unique_Patient_Identifier) %>%
-  pivot_longer(cols = ends_with("flux"),names_to = "signature",values_to = "weight") -> 
-  lusc_attribution_long
 
 variant_name_extracter <- function(variant_names_vec){
   variant_names <- strsplit(x = variant_names_vec, split = "_")

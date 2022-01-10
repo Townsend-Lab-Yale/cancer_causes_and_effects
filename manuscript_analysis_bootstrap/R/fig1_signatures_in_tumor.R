@@ -29,7 +29,7 @@ weight_summary %>%
   signatures_to_plot
 
 # order of the signatures in the figure 
-sig_order <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
+sig_order <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.2")
 sig_order <- sig_order$meta$Signature
 
 lusc_tumor_trinuc_long$signature <- factor(lusc_tumor_trinuc_long$signature, levels = sig_order)

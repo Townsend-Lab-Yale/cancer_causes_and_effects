@@ -8,9 +8,10 @@
 
 variant_attribution_plotter <- function(tumor_type, sig_of_focus=NULL){
   
-  # tumor_type <- "LUAD" # for dev 
+  # tumor_type <- "LUAD" # for dev
   # sig_of_focus <- "Tobacco (4,29)"
   
+
   these_fig3_data <- fig3_data_gathered[[tumor_type]]
   
   
@@ -83,6 +84,30 @@ variant_attribution_plotter <- function(tumor_type, sig_of_focus=NULL){
     fig3_quantile_data
   
   
+  these_fig3_data %>% 
+    mutate(signature = stringr::str_remove(string = signature, pattern = "_nrsi")) %>%
+    mutate(signature_process = case_when(
+      signature == "SBS1" ~ "Deamination with age, clock-like (1)",
+      signature == "SBS5" ~ "Unknown, clock-like (5)",
+      signature %in% c("SBS2","SBS13") ~ "APOBEC (2,13)",
+      signature %in% c("SBS3") ~ "Defective homologous recombination (3)",
+      signature %in% c("SBS4","SBS29") ~ "Tobacco (4,29)",
+      signature %in% c("SBS7a","SBS7b","SBS7c","SBS7d","SBS38") ~ "UV light (7a–d,38)",
+      signature %in% c("SBS11","SBS31","SBS32","SBS35") ~ "Prior treatment (11,31,32,35)",
+      signature %in% c("SBS22","SBS24","SBS42","SBS88") ~ "Mutagenic chemical exposure (22,24,42,88)",
+      signature %in% c("SBS16") ~ "Alcohol-associated (16)",
+      TRUE ~ "Non-actionable and unknown signatures")) %>%
+    # filter(signature_process %in% sig_of_focus) %>% 
+    mutate(variant_name = variant_name_extracter(variant)) %>%
+    group_by(bootstrap_sample, variant_name, signature_process) %>%
+    summarize(weight = sum(avg_weight)) %>% 
+    group_by(variant_name, signature_process) %>%
+    summarize(conf_lower = quantile(weight,0.025),
+              median = median(weight),
+              conf_upper = quantile(weight,0.975)) %>%
+    mutate(tumor_type = tumor_type) -> 
+    fig3_quantile_data_all
+  
   
   
   plot_range <- max(max(range_of_plot$total_bar),fig3_quantile_data$qlast)
@@ -112,8 +137,9 @@ variant_attribution_plotter <- function(tumor_type, sig_of_focus=NULL){
                        limits = if(plot_range<y_axis_values[length(y_axis_values)]){
                          c(min(y_axis_values)-0.0,max(y_axis_values)+0.0)
                        }else{
-                           c(-1*plot_range,plot_range)
-  })
+                         c(-1*plot_range,plot_range)
+                       }) + 
+    theme(text = element_text(size = plot_text_size))
   
   
   this_fig3_attr_plot <- this_fig3_attr_plot + 
@@ -121,7 +147,8 @@ variant_attribution_plotter <- function(tumor_type, sig_of_focus=NULL){
   
   
   
-  return(this_fig3_attr_plot)
+  return(list(this_fig3_attr_plot=this_fig3_attr_plot,
+              fig3_quantile_data_all=fig3_quantile_data_all))
   
   
 }
@@ -178,7 +205,8 @@ avg_signature_plotter <- function(tumor_type, sig_of_focus=NULL,plot_title=NULL)
           axis.title.y = element_blank(),
           axis.title.x = element_blank()) + 
     labs(title = plot_title) + 
-    theme(plot.title = element_text(hjust = 0.5))
+    theme(plot.title = element_text(hjust = 0.5)) + 
+    theme(text = element_text(size = plot_text_size))
   
   
 }
@@ -201,4 +229,61 @@ avg_signature_plotter <- function(tumor_type, sig_of_focus=NULL,plot_title=NULL)
 # 
 # avg_signature_plotter(tumor_type = "HNSC_HPVpos",sig_of_focus = "APOBEC (2,13)",plot_title = "HNSC HPV negative")
 # 
+
+
+
+
+tumor_type <- "SKCMP" # for dev
+sig_of_focus <- "UV light (7a–d,38)"
+
+these_fig3_data <- fig3_data_gathered[[tumor_type]]
+
+
+these_fig3_medians <- these_fig3_data %>% 
+  group_by(variant,signature) %>%
+  summarize(median_weight = median(avg_weight)) %>%
+  mutate(signature = str_remove(string = signature, pattern = "_nrsi"))
+
+
+these_fig3_medians_forplot <- these_fig3_medians %>%
+  mutate(signature_process = case_when(
+    signature == "SBS1" ~ "Deamination with age, clock-like (1)",
+    signature == "SBS5" ~ "Unknown, clock-like (5)",
+    signature %in% c("SBS2","SBS13") ~ "APOBEC (2,13)",
+    signature %in% c("SBS3") ~ "Defective homologous recombination (3)",
+    signature %in% c("SBS4","SBS29") ~ "Tobacco (4,29)",
+    signature %in% c("SBS7a","SBS7b","SBS7c","SBS7d","SBS38") ~ "UV light (7a–d,38)",
+    signature %in% c("SBS11","SBS31","SBS32","SBS35") ~ "Prior treatment (11,31,32,35)",
+    signature %in% c("SBS22","SBS24","SBS42","SBS88") ~ "Mutagenic chemical exposure (22,24,42,88)",
+    signature %in% c("SBS16") ~ "Alcohol-associated (16)",
+    TRUE ~ "Non-actionable and unknown signatures")) %>%
+  group_by(variant, signature_process) %>%
+  summarize(median_weight = sum(median_weight)) %>% 
+  ungroup() %>%
+  mutate(value_to_plot = case_when(
+    signature_process == sig_of_focus ~ median_weight*-1,
+    TRUE ~ median_weight)) %>% 
+  mutate(variant_name = variant_name_extracter(variant))
+
+
+these_fig3_medians_forplot %>%
+  filter(!signature_process %in% sig_of_focus) %>%
+  group_by(variant_name) %>%
+  summarize(total = sum(median_weight)) %>%
+  arrange(desc(total)) %>% 
+  pull(variant_name) -> 
+  order_of_variants
+
+these_fig3_medians_forplot$variant_name <- factor(these_fig3_medians_forplot$variant_name, 
+                                                  levels = rev(order_of_variants))
+these_fig3_medians_forplot
+
+these_fig3_medians_forplot %>% 
+  filter(variant_name == "KIT K642E") %>%
+  mutate(med_weight_prop = median_weight / sum(median_weight)) %>% 
+  select(-value_to_plot) %>% arrange(desc(med_weight_prop)) %>%
+  select(signature_process, med_weight_prop)
+
+
+
 

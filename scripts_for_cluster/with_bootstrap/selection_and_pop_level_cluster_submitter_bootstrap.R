@@ -138,6 +138,11 @@ signature_exclusions <- suggest_cosmic_signatures_to_remove(cancer_type = parame
                                                               filter(input_parameter == "exclusion_cancer_type") %>%
                                                               pull(input_value), 
                                                             treatment_naive = TRUE)
+# trinucs on ESCC
+# include signature 16 in accordance with https://www.annalsofoncology.org/article/S0923-7534(19)45461-6/fulltext
+if(tumor_name == "ESCC"){
+  signature_exclusions <- signature_exclusions[-which(signature_exclusions == "SBS16")]
+}
 
 cesa <- gene_mutation_rates(cesa,covariates = parameters_for_run %>%
                               filter(input_parameter == "gene_covariates") %>%

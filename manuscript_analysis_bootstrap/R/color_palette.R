@@ -43,7 +43,7 @@ color_vec <- setNames(nm= as.character(test_colors$object),object = as.character
 
 # converting to SBS for plots 
 
-signatures <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.1")
+signatures <- cancereffectsizeR::get_ces_signature_set("ces.refset.hg19", "COSMIC_v3.2")
 signatures <- signatures$meta$Signature
 
 sig_tib <- tibble(signature = signatures) 
