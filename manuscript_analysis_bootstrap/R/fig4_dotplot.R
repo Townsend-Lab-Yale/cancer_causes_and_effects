@@ -101,11 +101,14 @@ fig4dotplot <- ggplot() +
   scale_x_discrete(position = "top") + 
   scale_y_discrete(limits=rev(levels(sigs_present)),
     labels=gsub(pattern = "SBS",replacement = "",x = rev(levels(sigs_present))))  +
-  theme(axis.text.x = element_text(angle=45,hjust=0)) + 
+  theme(axis.text.x = element_text(angle=55,hjust=0),
+        text=element_text(size=plot_text_size-5)) + 
   labs(x="Tumor type",
        y="Signature") + 
   scale_size(range = c(0, 10),breaks = c(0,0.05,0.1,0.2,0.4,0.6,1),name = "Proportional signature weight | Cancer effect weight") +
+  guides(size=guide_legend(nrow=3,byrow=TRUE)) + 
   geom_vline(xintercept = v_lines,alpha=0.1) +
+  theme(legend.margin = margin(-0.5,unit="cm")) + 
   geom_hline(yintercept = h_lines,alpha=0.1) +
   theme(legend.position = "bottom")  
 

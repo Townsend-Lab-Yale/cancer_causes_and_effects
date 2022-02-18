@@ -112,7 +112,44 @@ effect_plot <- ggplot(mean_signature_weights %>% filter(data_type == "effectsize
         plot.title = element_text(hjust=0.5)) + 
   scale_x_reverse()
 
-effects_legend <- suppressWarnings(cowplot::get_legend(plot = effect_plot))
+
+mean_signature_weights_legend <- mean_signature_weights
+
+mean_signature_weights_legend$signature_process <- 
+  factor(mean_signature_weights_legend$signature_process, 
+         levels = 
+           c("Non-actionable and unknown signatures",
+             "UV light (7a–d,38)",
+             "Defective homologous recombination (3)",
+             "APOBEC (2,13)",
+             "Unknown, clock-like (5)",
+             "Deamination with age, clock-like (1)",
+             "Tobacco (4,29)",
+             "Alcohol-associated (16)",
+             "Mutagenic chemical exposure (22,24,42,88)")
+         )
+                                                   
+
+mean_signature_weights_legend <- mean_signature_weights_legend %>%
+  filter(!is.na(signature_process))
+
+color_vec_fig4 <- color_vec[levels(mean_signature_weights_legend$signature_process)]
+
+
+effect_plot_for_legend <- ggplot(mean_signature_weights_legend %>% filter(data_type == "effectsize"), 
+                      aes(x=mean_weight,y=tumor_type,fill=signature_process)) +  
+  geom_bar(stat="identity", color="black") + 
+  scale_fill_manual(values = color_vec_fig4, limits=force) +
+  theme_bw() + 
+  labs(x="Weight", title = "Effects",fill=NULL) + 
+  ylab(NULL) + 
+  # scale_y_discrete(position = "right") + 
+  # guides(fill="none") + 
+  theme(axis.text.y = element_blank(), 
+        plot.title = element_text(hjust=0.5)) + 
+  scale_x_reverse()
+
+effects_legend <- suppressWarnings(cowplot::get_legend(plot = effect_plot_for_legend))
 
 
 

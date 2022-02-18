@@ -198,7 +198,7 @@ cowplot::save_plot(plot = fig2_all_w_legend,
 fig3_data_gathered <- readRDS("bootstrap_analysis/fig3_data_gathered.rds")
 fig3_trinuc_data_gathered <- readRDS("bootstrap_analysis/fig3_data_trinuc_gathered.rds")
 
-
+plot_text_size <- 20
 source("manuscript_analysis_bootstrap/R/fig3_plots_create.R")
 
 fig3_sub_heights <- c(1.6,5)
@@ -256,21 +256,39 @@ fig3 <- cowplot::plot_grid(fig3a,
                    fig3e,
                    fig3f,
                    fig3g,
-                   fig3h,nrow=2,align = "hv",labels = "AUTO",label_size = plot_text_size)
+                   fig3h,nrow=4,align = "hv",labels = "AUTO",label_size = plot_text_size)
 
 # cowplot::save_plot(plot = fig3, filename = "manuscript_analysis_bootstrap/figures/fig3.png",base_height = 7.5,base_width = 13)
 
 
 # +figure3 legend ----- 
-test_colors$object <- factor(test_colors$object, levels = test_colors$object)
-ggplot(test_colors[4:13,], aes(x=object,y=1,fill=object)) +
+test_colors$object <- factor(test_colors$object, levels = c(
+  "Tobacco (4,29)",
+  "Non-actionable and unknown signatures",
+  "Defective homologous recombination (3)",
+  "Unknown, clock-like (5)",
+  "Deamination with age, clock-like (1)",
+  "UV light (7a–d,38)",
+  "APOBEC (2,13)",
+  "Mutagenic chemical exposure (22,24,42,88)",
+  "Alcohol-associated (16)")
+  )
+
+test_colors <- test_colors %>%
+  filter(!is.na(object))
+
+color_vec_fig3 <- color_vec[levels(test_colors$object)]
+
+ggplot(test_colors, aes(x=object,y=1,fill=object)) +
   geom_col() +
-  scale_fill_manual(values = color_vec,limits=force) +
+  scale_fill_manual(values = color_vec_fig3,limits=force) +
   theme_classic() + 
   labs(fill="") + 
-  guides(fill=guide_legend(nrow=3)) +
+  guides(fill=guide_legend(nrow=5,byrow = T)) +
   theme(legend.position = "bottom") + 
-  theme(text = element_text(size = plot_text_size))-> 
+  theme(text = element_text(size = plot_text_size),
+        legend.spacing.x = unit(0.2, 'cm'),
+        legend.spacing.y = unit(0, 'cm'))-> 
   fig3_ggplotlegend
 
 fig3_legend <- suppressWarnings(cowplot::get_legend(fig3_ggplotlegend))
@@ -292,12 +310,12 @@ y_label <- ggdraw() +
   theme(
     # add margin on the left of the drawing canvas,
     # so title is aligned with left edge of first plot
-    plot.margin = margin(0, 0, 0, 7)
+    plot.margin = margin(0, 15, 0, 15)
   )
 
 x_label <- ggdraw() +
   draw_label(
-    "Proportion of mutational weight or cancer effect attributable to each mutational process",
+    "Proportion of mutational weight or cancer effect \nattributable to each mutational process",
     fontface = 'bold',
     x = 0.5175,
     angle=0,
@@ -309,7 +327,7 @@ x_label <- ggdraw() +
   theme(
     # add margin on the left of the drawing canvas,
     # so title is aligned with left edge of first plot
-    plot.margin = margin(7, 0, 20, 0)
+    plot.margin = margin(7, 0, 50, 0)
   )
 
 
@@ -318,7 +336,7 @@ fig3_w_lab <- plot_grid(
   y_label, fig3,
   ncol = 2,
   # rel_heights values control vertical title margins
-  rel_widths = c(0.015, 1)
+  rel_widths = c(0.020, 1)
 )
 
 
@@ -333,10 +351,10 @@ fig3_w_lab <- plot_grid(
 fig3_w_legend <- plot_grid(fig3_legend,fig3_w_lab, ncol=1,rel_heights = c(0.1,1))
 
 
-cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstrap/figures/fig3.png",base_height = 10,base_width = 18)
+cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstrap/figures/fig3.png",base_height = 15,base_width = 10)
 
 cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstrap/figures/Cannataro_MBE-21-0913_fig3.eps",
-                   base_height = 10,base_width = 18,device= cairo_ps)
+                   base_height = 15,base_width = 10,device= cairo_ps)
 
 
 # +supp table relating to figure 3 data ------ 
@@ -374,7 +392,7 @@ fig4_bars <- cowplot::plot_grid(weight_plot, axis_text, effect_plot + guides(fil
 
 fig4_bars_w_legend <- cowplot::plot_grid(fig4_bars,effects_legend,nrow = ,rel_widths = c(1,.5))
 
-fig4 <- cowplot::plot_grid(fig4dotplot,fig4_bars_w_legend,nrow = 2,rel_heights = c(1.5,1),labels = c("A",""))
+fig4 <- cowplot::plot_grid(fig4dotplot,fig4_bars_w_legend,nrow = 2,rel_heights = c(2,1),labels = c("A",""))
 
 cowplot::save_plot(plot = fig4,filename = "manuscript_analysis_bootstrap/figures/fig4.png",base_height = 12,base_width = 9)
 
