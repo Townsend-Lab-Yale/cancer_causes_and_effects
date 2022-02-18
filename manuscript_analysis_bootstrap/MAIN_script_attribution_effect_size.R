@@ -5,7 +5,7 @@
 
 # load in required packages ----- 
 
-library(cancereffectsizeR) # v. 2.3.4
+library(cancereffectsizeR) # v. 2.4.0
 library(tidyverse)
 library(data.table)
 library(cowplot)
@@ -173,7 +173,7 @@ fig2d <- cowplot::plot_grid(jsd_boxplots[["THCA"]],jsd_barplots[["THCA"]],nrow =
 
 fig2_all <- cowplot::plot_grid(fig2a,fig2b,fig2c,fig2d,nrow = 2,labels = "AUTO",label_size = plot_text_size)
 
-fig2_all_w_legend <- cowplot::plot_grid(fig2_all + theme(plot.margin = unit(c(1,1,-15,1), "mm")),
+fig2_all_w_legend <- cowplot::plot_grid(fig2_all + theme(plot.margin = unit(c(1,1,-11,1), "mm")),
                                         fig2_legend ,
                                         nrow=2,rel_heights = c(5,1))
 

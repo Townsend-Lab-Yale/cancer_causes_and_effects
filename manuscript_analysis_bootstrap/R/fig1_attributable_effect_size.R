@@ -120,6 +120,43 @@ ggplot(mean_attributable_effect, aes(fill=signature_process)) +
 
 color_vec_fig1 <- color_vec[!names(color_vec) %in% c("Prior treatment (11,31,32,35)","Mutagenic chemical exposure (22,24,42,88)","Alcohol-associated (16)")]
 
+
+
+
+# figure legend should be in the order of the colors in the figure
+
+# sig 1
+# sig 2
+# sig 4
+# sig 5
+# sig 3
+# sig 7s
+# unknowns
+# TP53 
+# KLF
+# OR
+
+# levels(mean_attributable_effect$signature_process)
+
+mean_attributable_effect$signature_process <- 
+  factor(mean_attributable_effect$signature_process, 
+         levels = c(
+           "Deamination with age, clock-like (1)",
+           "APOBEC (2,13)",
+           "Tobacco (4,29)",
+           "Unknown, clock-like (5)",
+           "Defective homologous recombination (3)",
+           "UV light (7a–d,38)",
+           "Non-actionable and unknown signatures",
+           "TP53 R282W",
+           "KLF5 E419Q",
+           "OR2T34 L163L"
+         )
+  )
+
+
+color_vec_fig1 <- color_vec_fig1[levels(mean_attributable_effect$signature_process)]
+
 ggplot(mean_attributable_effect, aes(fill=signature_process)) + 
   geom_bar(aes(x=1,y=avg_weight),stat="identity") + 
   scale_fill_manual(values=color_vec_fig1) + 
@@ -127,7 +164,7 @@ ggplot(mean_attributable_effect, aes(fill=signature_process)) +
   theme_classic() + 
   theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank()) + 
-  guides(fill=guide_legend(nrow=4)) +
+  guides(fill=guide_legend(nrow=3,byrow = T)) +
   theme(legend.position = "bottom")  +
   theme(text = element_text(size = plot_text_size+4))-> 
   gg_for_legend

@@ -172,16 +172,42 @@ for(tumor_ind in seq_along(tumors_in_plot)){
 
 signatures_shown$sig_label <- factor(signatures_shown$sig_label, levels = names(color_vec))
 
+# order for the legend to match figure  
+
+#' 7
+#' 1
+#' 5
+#' unknown
+#' 2
+#' 3
+#' 4
+#' 
+#' 
+
+
+color_vec_fig2 <- color_vec[c("UV light (7a–d,38)",
+                              "Deamination with age, clock-like (1)",
+                              "Unknown, clock-like (5)",
+                              "Non-actionable and unknown signatures",
+                              "APOBEC (2,13)",
+                              "Defective homologous recombination (3)",
+                              "Tobacco (4,29)")]
+signatures_shown$sig_label <- factor(signatures_shown$sig_label,
+                                     levels = names(color_vec_fig2))
 
 signatures_shown %>% 
   ggplot(aes(x=tumor_type,y=weight,fill=sig_label)) + 
   geom_bar(stat="identity", color="black") + 
-  scale_fill_manual(values=color_vec,limits=force) + 
-  guides(fill=guide_legend(nrow=3)) +
+  scale_fill_manual(values=color_vec_fig2,limits=force) + 
+  guides(fill=guide_legend(nrow=3,byrow = T)) +
   theme(legend.position = "bottom") + 
   labs(fill = "") + 
   theme(text = element_text(size = plot_text_size))-> 
   fig2_legend
+
+
+
+
 
 fig2_legend <- suppressWarnings(cowplot::get_legend(fig2_legend))
 
