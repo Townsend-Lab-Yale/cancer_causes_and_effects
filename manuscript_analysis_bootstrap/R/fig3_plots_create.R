@@ -206,7 +206,8 @@ avg_signature_plotter <- function(tumor_type, sig_of_focus=NULL,plot_title=NULL)
           axis.title.x = element_blank()) + 
     labs(title = plot_title) + 
     theme(plot.title = element_text(hjust = 0.5)) + 
-    theme(text = element_text(size = plot_text_size))
+    theme(text = element_text(size = plot_text_size)) + 
+    theme(plot.title = element_text(size = plot_text_size)) 
    
   
 }

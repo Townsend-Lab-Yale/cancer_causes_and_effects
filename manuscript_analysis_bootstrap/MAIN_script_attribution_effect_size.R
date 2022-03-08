@@ -351,10 +351,10 @@ fig3_w_lab <- plot_grid(
 fig3_w_legend <- plot_grid(fig3_legend,fig3_w_lab, ncol=1,rel_heights = c(0.1,1))
 
 
-cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstrap/figures/fig3.png",base_height = 15,base_width = 10)
+cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstrap/figures/fig3.png",base_height = 20,base_width = 10)
 
 cowplot::save_plot(plot = fig3_w_legend, filename = "manuscript_analysis_bootstrap/figures/Cannataro_MBE-21-0913_fig3.eps",
-                   base_height = 15,base_width = 10,device= cairo_ps)
+                   base_height = 20,base_width = 10,device= cairo_ps)
 
 
 # +supp table relating to figure 3 data ------ 
@@ -564,6 +564,7 @@ names(etiol) <- sig_context$meta$Signature
   
 weight_and_effect_data$etiol <- etiol[as.character(weight_and_effect_data$signature)]
 
+message("Unknown signatures cancer effect size among cancers:")
 weight_and_effect_data %>%
   filter(str_detect(string = etiol,pattern = "Unknown")) %>%
   filter(!etiol == "Unknown, clock-like") %>%
