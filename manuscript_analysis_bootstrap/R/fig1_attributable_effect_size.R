@@ -109,7 +109,7 @@ mean_attributable_effect$signature_process <- factor(mean_attributable_effect$si
 ggplot(mean_attributable_effect, aes(fill=signature_process)) + 
   geom_bar(aes(x=1,y=avg_weight),stat="identity") + 
   scale_fill_manual(values=color_vec,limits=force) + 
-  labs(y="Average attributable effect size\n among bootstrap samples",x=NULL,fill="Signature") + 
+  labs(y="Average attributable effect size",x=NULL,fill="Signature") + 
   theme_classic() + 
   theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank()) + 
@@ -138,6 +138,25 @@ color_vec_fig1 <- color_vec[!names(color_vec) %in% c("Prior treatment (11,31,32,
 
 # levels(mean_attributable_effect$signature_process)
 
+# mean_attributable_effect$signature_process <- 
+#   factor(mean_attributable_effect$signature_process, 
+#          levels = c(
+#            "Deamination with age, clock-like (1)",
+#            "APOBEC (2,13)",
+#            "Tobacco (4,29)",
+#            "Unknown, clock-like (5)",
+#            "Defective homologous recombination (3)",
+#            "UV light (7a–d,38)",
+#            "Non-actionable and unknown signatures",
+#            "TP53 R282W",
+#            "KLF5 E419Q",
+#            "OR2T34 L163L"
+#          )
+#   )
+
+# now removing variants from the legent because the data is in the plot 
+
+
 mean_attributable_effect$signature_process <- 
   factor(mean_attributable_effect$signature_process, 
          levels = c(
@@ -147,12 +166,11 @@ mean_attributable_effect$signature_process <-
            "Unknown, clock-like (5)",
            "Defective homologous recombination (3)",
            "UV light (7a–d,38)",
-           "Non-actionable and unknown signatures",
-           "TP53 R282W",
-           "KLF5 E419Q",
-           "OR2T34 L163L"
+           "Non-actionable and unknown signatures"
          )
   )
+
+
 
 
 color_vec_fig1 <- color_vec_fig1[levels(mean_attributable_effect$signature_process)]
@@ -160,11 +178,11 @@ color_vec_fig1 <- color_vec_fig1[levels(mean_attributable_effect$signature_proce
 ggplot(mean_attributable_effect, aes(fill=signature_process)) + 
   geom_bar(aes(x=1,y=avg_weight),stat="identity") + 
   scale_fill_manual(values=color_vec_fig1) + 
-  labs(y="Average attributable effect size\n among bootstrap samples",x=NULL,fill="") + 
+  labs(y="Average attributable effect size",x=NULL,fill="") + 
   theme_classic() + 
   theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank()) + 
-  guides(fill=guide_legend(nrow=3,byrow = T)) +
+  guides(fill=guide_legend(nrow=2,byrow = T)) +
   theme(legend.position = "bottom")  +
   theme(text = element_text(size = plot_text_size+4))-> 
   gg_for_legend
