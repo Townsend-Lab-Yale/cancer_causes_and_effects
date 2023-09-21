@@ -1,6 +1,6 @@
 A repository associated with [Attribution of Cancer Origins to Endogenous, Exogenous, and Preventable Mutational Processes](https://academic.oup.com/mbe/article/39/5/msac084/6570859), *Molecular and Biological Evolution* (Cannataro, Mandell, and Townsend 2023).
 
-**New:** The [cancereffectsizeR (https://townsend-lab-yale.github.io/cancereffectsizeR/)] package now has a [built-in function ](https://townsend-lab-yale.github.io/cancereffectsizeR/reference/mutational_signature_effects.html) to attribute cancer effects to mutational processes using our method. Naturally, for your own analyses, you should use this actively maintained package rather than extracting code from this repository. :)
+**New:** The [cancereffectsizeR](https://townsend-lab-yale.github.io/cancereffectsizeR/) package now has a [built-in function](https://townsend-lab-yale.github.io/cancereffectsizeR/reference/mutational_signature_effects.html) to attribute cancer effects to mutational processes using our method. Naturally, for your own analyses, you should use this actively maintained package rather than extracting code from this repository. :)
 
 
 
